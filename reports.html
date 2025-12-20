@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Forensic Reports</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --warning-amber: #ff8c00;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+            --deep-charcoal: #1a1a1a;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1419;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .cyber-font {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        .glass-panel {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
+        }
+        
+        .template-card {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .template-card:hover {
+            border-color: var(--cyber-blue);
+            transform: translateY(-4px);
+        }
+        
+        .template-card.selected {
+            border-color: var(--matrix-green);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        
+        .export-format {
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .export-format:hover {
+            border-color: var(--cyber-blue);
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .export-format.selected {
+            border-color: var(--matrix-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="cyber-grid">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="cyber-font text-xl font-bold text-cyber-blue">TOR UNVEIL</h1>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Dashboard</a>
+                    <a href="analysis.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Analysis</a>
+                    <a href="forensics.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Forensics</a>
+                    <a href="reports.html" class="text-cyber-blue font-medium border-b-2 border-cyber-blue pb-1">Reports</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="pt-20 pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-6">
+                <h1 class="cyber-font text-3xl md:text-5xl font-bold mb-3">
+                    <span class="text-cyber-blue">Forensic</span> 
+                    <span class="text-white">Report</span>
+                    <span class="text-matrix-green">Generation</span>
+                </h1>
+                <p class="text-gray-300 max-w-2xl mx-auto">
+                    Automated generation of court-ready forensic reports with comprehensive analysis, evidence correlation, and professional documentation.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Report Builder -->
+    <section class="pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Panel - Template Selection -->
+                <div class="lg:col-span-1">
+                    <div class="glass-panel rounded-lg p-6 hover-lift mb-6">
+                        <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-4">Report Templates</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="template-card bg-steel-gray rounded-lg p-4 selected" data-template="investigation">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-medium text-white">Investigation Report</h4>
+                                    <span class="text-xs text-matrix-green">Recommended</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">
+                                    Comprehensive investigation report with evidence analysis, timeline reconstruction, and origin identification.
+                                </p>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-cyber-blue">Legal Grade</span>
+                                    <span class="text-gray-400">8-12 pages</span>
+                                </div>
+                            </div>
+                            
+                            <div class="template-card bg-steel-gray rounded-lg p-4" data-template="summary">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-medium text-white">Executive Summary</h4>
+                                    <span class="text-xs text-cyber-blue">Quick</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">
+                                    Concise executive summary with key findings, statistics, and high-level conclusions for leadership review.
+                                </p>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-cyber-blue">Executive Grade</span>
+                                    <span class="text-gray-400">3-5 pages</span>
+                                </div>
+                            </div>
+                            
+                            <div class="template-card bg-steel-gray rounded-lg p-4" data-template="technical">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-medium text-white">Technical Analysis</h4>
+                                    <span class="text-xs text-warning-amber">Advanced</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">
+                                    Deep technical analysis with network topology, packet flows, protocol distribution, and anomaly detection.
+                                </p>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-cyber-blue">Technical Grade</span>
+                                    <span class="text-gray-400">10-15 pages</span>
+                                </div>
+                            </div>
+                            
+                            <div class="template-card bg-steel-gray rounded-lg p-4" data-template="evidence">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-medium text-white">Evidence Documentation</h4>
+                                    <span class="text-xs text-critical-red">Legal</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">
+                                    Court-ready evidence documentation with chain of custody, legal analysis, and admissibility notes.
+                                </p>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-cyber-blue">Legal Grade</span>
+                                    <span class="text-gray-400">6-10 pages</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Export Formats -->
+                    <div class="glass-panel rounded-lg p-6 hover-lift">
+                        <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-4">Export Formats</h3>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="export-format bg-steel-gray rounded-lg p-4 selected" data-format="html">
+                                <div class="text-center">
+                                    <div class="text-2xl mb-2">🌐</div>
+                                    <div class="font-medium text-white text-sm">HTML</div>
+                                    <div class="text-xs text-gray-400">Interactive</div>
+                                </div>
+                            </div>
+                            
+                            <div class="export-format bg-steel-gray rounded-lg p-4" data-format="pdf">
+                                <div class="text-center">
+                                    <div class="text-2xl mb-2">📄</div>
+                                    <div class="font-medium text-white text-sm">PDF</div>
+                                    <div class="text-xs text-gray-400">Printable</div>
+                                </div>
+                            </div>
+                            
+                            <div class="export-format bg-steel-gray rounded-lg p-4" data-format="json">
+                                <div class="text-center">
+                                    <div class="text-2xl mb-2">📊</div>
+                                    <div class="font-medium text-white text-sm">JSON</div>
+                                    <div class="text-xs text-gray-400">Data</div>
+                                </div>
+                            </div>
+                            
+
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Panel - Report Preview -->
+                <div class="lg:col-span-2">
+                    <div class="glass-panel rounded-lg p-6 hover-lift">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="cyber-font text-lg font-bold text-cyber-blue">Live Report Preview</h3>
+                            <div class="flex gap-3">
+                                <button id="refreshPreview" class="bg-cyber-blue text-black px-4 py-2 rounded-lg font-medium hover:bg-opacity-80 transition-all">
+                                    🔄 Refresh
+                                </button>
+                                <button id="generateReport" class="bg-matrix-green text-black px-6 py-2 rounded-lg font-medium hover:bg-opacity-80 transition-all pulse-animation">
+                                    ⚡ Generate Report
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Report Preview Container -->
+                        <div class="bg-white rounded-lg shadow-lg overflow-hidden" style="max-height: 600px; overflow-y: auto;">
+                            <div id="reportPreview" class="report-preview">
+                                <!-- Dynamic report content will be inserted here -->
+                                <div class="p-8 text-center text-gray-500">
+                                    <div class="text-4xl mb-4">📊</div>
+                                    <h3 class="text-lg font-medium mb-2">Select a template to preview</h3>
+                                    <p class="text-sm">Choose a report template from the left panel to see a live preview with current data.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Report History Section -->
+    <section class="pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-lg p-6">
+                <h3 class="cyber-font text-xl font-bold text-cyber-blue mb-6">Recent Reports</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Report history cards -->
+                    <div class="bg-steel-gray rounded-lg p-4 hover-lift">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-matrix-green">Investigation Report</span>
+                            <span class="text-xs text-gray-400">2 min ago</span>
+                        </div>
+                        <p class="text-xs text-gray-300 mb-3">Comprehensive analysis of 15 correlations with 87% average confidence.</p>
+                        <div class="flex gap-2">
+                            <button class="text-xs bg-cyber-blue text-black px-3 py-1 rounded hover:bg-opacity-80">View</button>
+                            <button class="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-500">Download</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-steel-gray rounded-lg p-4 hover-lift">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-warning-amber">Technical Analysis</span>
+                            <span class="text-xs text-gray-400">15 min ago</span>
+                        </div>
+                        <p class="text-xs text-gray-300 mb-3">Deep packet analysis revealing 8 high-confidence circuit correlations.</p>
+                        <div class="flex gap-2">
+                            <button class="text-xs bg-cyber-blue text-black px-3 py-1 rounded hover:bg-opacity-80">View</button>
+                            <button class="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-500">Download</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-steel-gray rounded-lg p-4 hover-lift">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-critical-red">Evidence Report</span>
+                            <span class="text-xs text-gray-400">1 hour ago</span>
+                        </div>
+                        <p class="text-xs text-gray-300 mb-3">Legal documentation with chain of custody for 12 network artifacts.</p>
+                        <div class="flex gap-2">
+                            <button class="text-xs bg-cyber-blue text-black px-3 py-1 rounded hover:bg-opacity-80">View</button>
+                            <button class="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-500">Download</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Load the simple working report generator -->
+    <script src="simple-reports.js"></script>
+    
+    <script>
+        // Additional UI enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add refresh button functionality
+            const refreshBtn = document.getElementById('refreshPreview');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    if (window.reportGenerator) {
+                        window.reportGenerator.loadFreshData();
+                        
+                        // Visual feedback
+                        refreshBtn.innerHTML = '⏳ Refreshing...';
+                        refreshBtn.disabled = true;
+                        
+                        setTimeout(() => {
+                            refreshBtn.innerHTML = '🔄 Refresh';
+                            refreshBtn.disabled = false;
+                        }, 2000);
+                    }
+                });
+            }
+            
+            // Add floating animation to cards
+            if (typeof anime !== 'undefined') {
+                anime({
+                    targets: '.hover-lift',
+                    translateY: [-2, 2],
+                    duration: 3000,
+                    easing: 'easeInOutSine',
+                    direction: 'alternate',
+                    loop: true,
+                    delay: function(el, i) { return i * 200; }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>

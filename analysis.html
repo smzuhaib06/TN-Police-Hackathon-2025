@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Node Correlation Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <link href="https://unpkg.com/splitting@1.0.6/dist/splitting.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --warning-amber: #ff8c00;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+            --deep-charcoal: #1a1a1a;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-charcoal);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .cyber-font {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        .glass-panel {
+            background: rgba(45, 55, 72, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
+        }
+        
+        .confidence-meter {
+            height: 8px;
+            background: linear-gradient(90deg, #ff2d2d 0%, #ff8c00 50%, #00ff88 100%);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .confidence-indicator {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .correlation-matrix-cell {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .correlation-matrix-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        .algorithm-card {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .algorithm-card.selected {
+            border-color: var(--cyber-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="cyber-grid">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <img src="resources/police-badge.png" alt="TN Police" class="h-10 w-10">
+                    <img src="resources/hackathon-logo.png" alt="HACKATHON 2025" class="h-8 w-8">
+                    <h1 class="cyber-font text-xl font-bold text-cyber-blue">TOR UNVEIL</h1>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Dashboard</a>
+                    <a href="analysis.html" class="cyber-blue font-medium border-b-2 border-cyber-blue pb-1">Analysis</a>
+                    <a href="forensics.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Forensics</a>
+                    <a href="reports.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Reports</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="pt-20 pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-6">
+                <h1 class="cyber-font text-3xl md:text-5xl font-bold mb-3">
+                    <span class="text-cyber-blue">Node</span> 
+                    <span class="text-white">Correlation</span>
+                    <span class="text-matrix-green">Analysis</span>
+                </h1>
+                <p class="text-gray-300 max-w-2xl mx-auto">
+                    Advanced correlation algorithms to identify probable origin IPs behind TOR-based traffic through time-based matching of entry and exit nodes.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analysis Workspace -->
+    <section class="pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Live Analysis Status -->
+            <div class="glass-panel rounded-lg p-6 mb-6 hover-lift">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="cyber-font text-lg font-bold text-cyber-blue">Live TOR Analysis</h3>
+                    <div class="flex space-x-2">
+                        <button id="startAnalysis" class="px-4 py-1 bg-matrix-green text-black rounded text-xs hover:bg-opacity-80">Start Analysis</button>
+                        <button id="refreshData" class="px-3 py-1 bg-steel-gray rounded text-xs hover:bg-gray-600">Refresh</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-steel-gray rounded p-4 text-center">
+                        <div class="text-2xl font-bold text-cyber-blue mono-font" id="livePackets">0</div>
+                        <div class="text-sm text-gray-400">Packets Captured</div>
+                    </div>
+                    <div class="bg-steel-gray rounded p-4 text-center">
+                        <div class="text-2xl font-bold text-matrix-green mono-font" id="liveCircuits">0</div>
+                        <div class="text-sm text-gray-400">TOR Circuits</div>
+                    </div>
+                    <div class="bg-steel-gray rounded p-4 text-center">
+                        <div class="text-2xl font-bold text-warning-amber mono-font" id="liveCorrelations">0</div>
+                        <div class="text-sm text-gray-400">Correlations Found</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Correlation Matrix -->
+                <div class="lg:col-span-2">
+                    <div class="glass-panel rounded-lg p-6 hover-lift">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="cyber-font text-lg font-bold text-matrix-green">Time-Based Correlation Matrix</h3>
+                            <div class="flex space-x-2">
+                                <select id="timeWindow" class="bg-steel-gray border border-gray-600 rounded px-3 py-1 text-xs">
+                                    <option value="1h">1 Hour</option>
+                                    <option value="6h" selected>6 Hours</option>
+                                    <option value="24h">24 Hours</option>
+                                    <option value="7d">7 Days</option>
+                                </select>
+                                <button id="refreshCorrelation" class="px-3 py-1 bg-steel-gray rounded text-xs hover:bg-gray-600">Refresh</button>
+                            </div>
+                        </div>
+                        
+                        <div id="correlationMatrix" class="w-full h-80 bg-steel-gray rounded border border-gray-600 relative">
+                            <!-- Correlation heatmap will be rendered here -->
+                            <div class="absolute inset-0 flex items-center justify-center text-gray-400">
+                                <div class="text-center">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-matrix-green mx-auto mb-3"></div>
+                                    <p class="mono-font text-xs">Calculating Correlations...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 grid grid-cols-3 gap-4 text-xs">
+                            <div class="text-center">
+                                <div class="text-gray-400">Total Correlations</div>
+                                <div class="mono-font text-lg text-cyber-blue" id="totalCorrelations">247</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-gray-400">High Confidence</div>
+                                <div class="mono-font text-lg text-matrix-green" id="highConfidence">23</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-gray-400">Active Investigations</div>
+                                <div class="mono-font text-lg text-warning-amber" id="activeInvestigations">5</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Algorithm Configuration -->
+                <div class="lg:col-span-1">
+                    <div class="glass-panel rounded-lg p-6 hover-lift">
+                        <h3 class="cyber-font text-lg font-bold text-warning-amber mb-4">Analysis Algorithms</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="algorithm-card bg-steel-gray rounded p-4 selected" data-algorithm="timing">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-cyber-blue">Timing Correlation</span>
+                                    <div class="confidence-meter">
+                                        <div class="confidence-indicator" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-300 mb-2">Matches packet timing patterns between entry and exit nodes</p>
+                                <div class="flex justify-between text-xs">
+                                    <span>Accuracy: <span class="text-matrix-green">85%</span></span>
+                                    <span>Speed: <span class="text-cyber-blue">Fast</span></span>
+                                </div>
+                            </div>
+                            
+                            <div class="algorithm-card bg-steel-gray rounded p-4" data-algorithm="traffic">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-cyber-blue">Traffic Analysis</span>
+                                    <div class="confidence-meter">
+                                        <div class="confidence-indicator" style="width: 72%"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-300 mb-2">Analyzes traffic volume and flow characteristics</p>
+                                <div class="flex justify-between text-xs">
+                                    <span>Accuracy: <span class="text-matrix-green">72%</span></span>
+                                    <span>Speed: <span class="text-warning-amber">Medium</span></span>
+                                </div>
+                            </div>
+                            
+                            <div class="algorithm-card bg-steel-gray rounded p-4" data-algorithm="statistical">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-cyber-blue">Statistical Matching</span>
+                                    <div class="confidence-meter">
+                                        <div class="confidence-indicator" style="width: 68%"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-300 mb-2">Uses statistical methods to identify correlation patterns</p>
+                                <div class="flex justify-between text-xs">
+                                    <span>Accuracy: <span class="text-matrix-green">68%</span></span>
+                                    <span>Speed: <span class="text-critical-red">Slow</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 border-t border-gray-600">
+                            <h4 class="text-sm font-medium text-gray-300 mb-3">Analysis Settings</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Confidence Threshold</label>
+                                    <input type="range" id="threshold" min="0.5" max="0.95" step="0.05" value="0.75" 
+                                           class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                                    <span class="mono-font text-xs text-matrix-green" id="thresholdValue">0.75</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Time Window (hours)</label>
+                                    <select id="timeWindow" class="w-full bg-steel-gray border border-gray-600 rounded px-2 py-1 text-xs">
+                                        <option value="1">1 Hour</option>
+                                        <option value="6" selected>6 Hours</option>
+                                        <option value="24">24 Hours</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traffic Flow Visualization -->
+            <div class="mt-6">
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="cyber-font text-lg font-bold text-cyber-blue">Real-Time Traffic Analysis</h3>
+                        <div class="flex space-x-2">
+                            <span class="px-3 py-1 bg-matrix-green text-black rounded text-xs" id="liveStatus">LIVE</span>
+                        </div>
+                    </div>
+                    
+                    <div id="trafficFlow" class="w-full h-64 bg-steel-gray rounded border border-gray-600">
+                        <!-- Traffic flow chart will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="mt-6">
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="cyber-font text-lg font-bold text-matrix-green">Analysis Results</h3>
+                        <div class="flex space-x-2">
+                            <button id="exportResults" class="px-3 py-1 bg-steel-gray rounded text-xs hover:bg-gray-600">Export</button>
+                            <button id="saveAnalysis" class="px-3 py-1 bg-cyber-blue text-black rounded text-xs hover:bg-opacity-80">Save</button>
+                        </div>
+                    </div>
+                    
+                    <div id="analysisResults" class="space-y-4">
+                        <!-- Results will be populated here -->
+                        <div class="text-center text-gray-400 py-8">
+                            <div class="pulse-animation inline-block mb-2">
+                                <div class="w-4 h-4 bg-cyber-blue rounded-full"></div>
+                            </div>
+                            <p class="mono-font text-sm">Select exit nodes and run analysis to view results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-16 py-8 border-t border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-400 text-sm mono-font">
+                    2025 Tor unveil copyrights | Created by MOHAMMED ZUHAIB
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="correlation.js"></script>
+</body>
+</html>

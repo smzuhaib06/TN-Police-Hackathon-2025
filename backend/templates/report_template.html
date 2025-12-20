@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TOR Unveil - Forensic Report</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      h1 { color: #222 }
+      pre { background:#f4f4f4; padding:10px; border-radius:4px }
+      table { border-collapse: collapse; width:100% }
+      th,td { border: 1px solid #ddd; padding: 8px }
+      th { background:#eee }
+    </style>
+  </head>
+  <body>
+    <h1>TOR – Unveil : Forensic Report</h1>
+    <p>Generated: {{ generated_at }}</p>
+
+    <h2>Summary</h2>
+    <p>{{ summary }}</p>
+
+    <h2>Traces / Correlations</h2>
+    <table>
+      <thead>
+        <tr><th>Exit</th><th>Candidate Entry (fingerprint)</th><th>Count</th><th>Confidence</th></tr>
+      </thead>
+      <tbody>
+      {% for row in correlations %}
+        <tr>
+          <td>{{ row.exit }}</td>
+          <td>{{ row.entry }}</td>
+          <td>{{ row.count }}</td>
+          <td>{{ '%.2f'|format(row.confidence) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <h2>PCAP-derived Flows</h2>
+    {% if flows %}
+      <table>
+        <thead><tr><th>ts</th><th>proto</th><th>src:port</th><th>dst:port</th></tr></thead>
+        <tbody>
+        {% for f in flows %}
+          <tr><td>{{ f.ts }}</td><td>{{ f.proto }}</td><td>{{ f.src }}</td><td>{{ f.dst }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No PCAP flows included in this report.</p>
+    {% endif %}
+
+    <h2>Raw Data</h2>
+    <pre>{{ raw|tojson(indent=2) }}</pre>
+  </body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Forensic Investigation Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://unpkg.com/splitting@1.0.6/dist/splitting.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --warning-amber: #ff8c00;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+            --deep-charcoal: #1a1a1a;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1419;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .cyber-font {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        .glass-panel {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--cyber-blue);
+            background: var(--deep-charcoal);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-marker:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+        
+        .timeline-marker.critical {
+            border-color: var(--critical-red);
+            background: var(--critical-red);
+        }
+        
+        .timeline-marker.warning {
+            border-color: var(--warning-amber);
+            background: var(--warning-amber);
+        }
+        
+        .timeline-marker.info {
+            border-color: var(--cyber-blue);
+            background: var(--cyber-blue);
+        }
+        
+        .evidence-item {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .evidence-item.selected {
+            border-color: var(--cyber-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        .drop-zone {
+            border: 2px dashed rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: var(--cyber-blue);
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .tab-button {
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            border-bottom-color: var(--cyber-blue);
+            color: var(--cyber-blue);
+        }
+        
+        .probability-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #ff2d2d 0%, #ff8c00 50%, #00ff88 100%);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .probability-indicator {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="cyber-grid">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <img src="resources/police-badge.png" alt="TN Police" class="h-10 w-10">
+                    <img src="resources/hackathon-logo.png" alt="HACKATHON 2025" class="h-8 w-8">
+                    <h1 class="cyber-font text-xl font-bold text-cyber-blue">TOR UNVEIL</h1>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Dashboard</a>
+                    <a href="analysis.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Analysis</a>
+                    <a href="forensics.html" class="cyber-blue font-medium border-b-2 border-cyber-blue pb-1">Forensics</a>
+                    <a href="reports.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Reports</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="pt-20 pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-6">
+                <h1 class="cyber-font text-3xl md:text-5xl font-bold mb-3">
+                    <span class="text-cyber-blue">Forensic</span> 
+                    <span class="text-white">Investigation</span>
+                    <span class="text-matrix-green">Workspace</span>
+                </h1>
+                <p class="text-gray-300 max-w-2xl mx-auto">
+                    Comprehensive forensic analysis tools for investigating TOR network activity, processing evidence, and reconstructing attack timelines.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Investigation Timeline -->
+    <section class="pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-lg p-6 hover-lift">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="cyber-font text-lg font-bold text-cyber-blue">Investigation Timeline</h3>
+                    <div class="flex space-x-2">
+                        <button id="addEvent" class="px-3 py-1 bg-matrix-green text-black rounded text-xs hover:bg-opacity-80">Add Event</button>
+                        <button id="exportTimeline" class="px-3 py-1 bg-steel-gray rounded text-xs hover:bg-gray-600">Export</button>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <div class="h-2 bg-gray-600 rounded-full relative" id="timelineTrack">
+                        <!-- Timeline markers will be added here -->
+                        <div class="timeline-marker critical" style="left: 15%; top: -5px;" data-event="suspicious-activity" title="Suspicious Activity Detected"></div>
+                        <div class="timeline-marker warning" style="left: 35%; top: -5px;" data-event="correlation-detected" title="Correlation Pattern Found"></div>
+                        <div class="timeline-marker info" style="left: 60%; top: -5px;" data-event="evidence-upload" title="Evidence Uploaded"></div>
+                        <div class="timeline-marker critical" style="left: 85%; top: -5px;" data-event="origin-identified" title="Origin IP Identified"></div>
+                    </div>
+                    
+                    <div class="flex justify-between text-xs text-gray-400 mt-2">
+                        <span>2025-11-22 00:00</span>
+                        <span>06:00</span>
+                        <span>12:00</span>
+                        <span>18:00</span>
+                        <span>2025-11-23 00:00</span>
+                    </div>
+                </div>
+                
+                <div id="timelineDetails" class="mt-4 p-4 bg-steel-gray rounded hidden">
+                    <!-- Timeline event details will be shown here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Workspace -->
+    <section class="pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <!-- Left Sidebar - Evidence & Tools -->
+                <div class="lg:col-span-1">
+                    <div class="space-y-6">
+                        <!-- Evidence Upload -->
+                        <div class="glass-panel rounded-lg p-6 hover-lift">
+                            <h3 class="cyber-font text-lg font-bold text-matrix-green mb-4">Evidence Upload</h3>
+                            
+                            <div id="dropZone" class="drop-zone rounded-lg p-6 text-center mb-4">
+                                <div class="mb-2">
+                                    <svg class="w-8 h-8 mx-auto text-cyber-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm text-gray-300 mb-2">Drop PCAP files here</p>
+                                <p class="text-xs text-gray-400">or click to browse</p>
+                                <input type="file" id="fileInput" class="hidden" accept=".pcap,.pcapng,.log" multiple>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <button id="uploadNetworkLogs" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Network Logs
+                                </button>
+                                <button id="uploadSystemLogs" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    System Logs
+                                </button>
+                                <button id="uploadMemoryDump" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Memory Dump
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Evidence Collection -->
+                        <div class="glass-panel rounded-lg p-6 hover-lift">
+                            <h3 class="cyber-font text-lg font-bold text-warning-amber mb-4">Evidence Collection</h3>
+                            
+                            <div id="evidenceList" class="space-y-2 max-h-64 overflow-y-auto">
+                                <div class="evidence-item bg-steel-gray rounded p-3 cursor-pointer" data-evidence="pcap-001">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="font-medium text-cyber-blue text-sm">suspicious_traffic.pcap</div>
+                                            <div class="mono-font text-xs text-gray-400">2.3 GB • 2025-11-22 14:30</div>
+                                        </div>
+                                        <div class="text-xs text-matrix-green">Analyzed</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="evidence-item bg-steel-gray rounded p-3 cursor-pointer" data-evidence="log-001">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="font-medium text-cyber-blue text-sm">tor_access.log</div>
+                                            <div class="mono-font text-xs text-gray-400">45 MB • 2025-11-22 13:15</div>
+                                        </div>
+                                        <div class="text-xs text-warning-amber">Processing</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="evidence-item bg-steel-gray rounded p-3 cursor-pointer" data-evidence="memory-001">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="font-medium text-cyber-blue text-sm">system_memory.dmp</div>
+                                            <div class="mono-font text-xs text-gray-400">8.7 GB • 2025-11-22 12:45</div>
+                                        </div>
+                                        <div class="text-xs text-gray-400">Queued</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Forensic Tools -->
+                        <div class="glass-panel rounded-lg p-6 hover-lift">
+                            <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-4">Forensic Tools</h3>
+                            
+                            <div class="space-y-2">
+                                <button id="packetAnalyzer" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Packet Analyzer
+                                </button>
+                                <button id="timelineReconstructor" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Timeline Reconstructor
+                                </button>
+                                <button id="correlationEngine" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Correlation Engine
+                                </button>
+                                <button id="patternMatcher" class="w-full bg-steel-gray text-white font-medium py-2 rounded hover:bg-gray-600 transition-all text-xs">
+                                    Pattern Matcher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="lg:col-span-3">
+                    <!-- Tab Navigation -->
+                    <div class="flex space-x-1 mb-6 bg-steel-gray rounded-lg p-1">
+                        <button class="tab-button flex-1 py-2 px-4 rounded text-sm font-medium active" data-tab="evidence-collection">
+                            Evidence Collection
+                        </button>
+                        <button class="tab-button flex-1 py-2 px-4 rounded text-sm font-medium" data-tab="timeline-reconstruction">
+                            Timeline Reconstruction
+                        </button>
+                        <button class="tab-button flex-1 py-2 px-4 rounded text-sm font-medium" data-tab="origin-identification">
+                            Origin Identification
+                        </button>
+                        <button class="tab-button flex-1 py-2 px-4 rounded text-sm font-medium" data-tab="pcap-analysis">
+                            PCAP Analysis
+                        </button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div id="tabContent">
+                        <!-- Evidence Collection Tab -->
+                        <div id="evidence-collection" class="tab-panel">
+                            <div class="glass-panel rounded-lg p-6 hover-lift">
+                                <h3 class="cyber-font text-lg font-bold text-matrix-green mb-4">Evidence Analysis Dashboard</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-cyber-blue mono-font" id="totalFiles">24</div>
+                                        <div class="text-sm text-gray-400">Total Files</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-matrix-green mono-font" id="analyzedFiles">18</div>
+                                        <div class="text-sm text-gray-400">Analyzed</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-warning-amber mono-font" id="threatsFound">7</div>
+                                        <div class="text-sm text-gray-400">Threats Found</div>
+                                    </div>
+                                </div>
+                                
+                                <div id="evidenceChart" class="w-full h-64 bg-steel-gray rounded border border-gray-600">
+                                    <!-- Evidence analysis chart will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline Reconstruction Tab -->
+                        <div id="timeline-reconstruction" class="tab-panel hidden">
+                            <div class="glass-panel rounded-lg p-6 hover-lift">
+                                <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-4">Attack Timeline Reconstruction</h3>
+                                
+                                <div id="timelineChart" class="w-full h-80 bg-steel-gray rounded border border-gray-600 mb-4">
+                                    <!-- Timeline reconstruction chart will be rendered here -->
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-300 mb-2">Attack Phases</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between items-center bg-steel-gray rounded p-2">
+                                                <span class="text-sm">Reconnaissance</span>
+                                                <span class="mono-font text-xs text-cyber-blue">14:23-14:31</span>
+                                            </div>
+                                            <div class="flex justify-between items-center bg-steel-gray rounded p-2">
+                                                <span class="text-sm">Initial Access</span>
+                                                <span class="mono-font text-xs text-warning-amber">14:32-14:35</span>
+                                            </div>
+                                            <div class="flex justify-between items-center bg-steel-gray rounded p-2">
+                                                <span class="text-sm">Persistence</span>
+                                                <span class="mono-font text-xs text-critical-red">14:36-14:42</span>
+                                            </div>
+                                            <div class="flex justify-between items-center bg-steel-gray rounded p-2">
+                                                <span class="text-sm">Exfiltration</span>
+                                                <span class="mono-font text-xs text-matrix-green">14:43-14:51</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-300 mb-2">Key Findings</h4>
+                                        <div class="space-y-2 text-sm text-gray-300">
+                                            <div>• TOR circuit established at 14:23:17</div>
+                                            <div>• Suspicious traffic pattern detected</div>
+                                            <div>• Data exfiltration via exit node 185.220.101.45</div>
+                                            <div>• Connection terminated at 14:51:33</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Origin Identification Tab -->
+                        <div id="origin-identification" class="tab-panel hidden">
+                            <div class="glass-panel rounded-lg p-6 hover-lift">
+                                <h3 class="cyber-font text-lg font-bold text-warning-amber mb-4">Origin IP Probability Analysis</h3>
+                                
+                                <div id="originCandidates" class="space-y-4 mb-6">
+                                    <!-- Dynamic origin candidates will be populated here -->
+                                </div>
+                                
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-300 mb-3">Geographic Distribution</h4>
+                                        <div id="originMap" class="w-full h-64 bg-steel-gray rounded border border-gray-600">
+                                            <!-- Geographic origin mapping will be rendered here -->
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-gray-300 mb-3">Analysis Summary</h4>
+                                        <div id="originSummary" class="space-y-3">
+                                            <!-- Analysis summary will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+
+                            </div>
+                        </div>
+
+                        <!-- PCAP Analysis Tab -->
+                        <div id="pcap-analysis" class="tab-panel hidden">
+                            <div class="glass-panel rounded-lg p-6 hover-lift">
+                                <h3 class="cyber-font text-lg font-bold text-critical-red mb-4">PCAP File Analysis</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-300 mb-3">Traffic Statistics</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span>Total Packets:</span>
+                                                <span class="mono-font text-cyber-blue">847,392</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>TOR Traffic:</span>
+                                                <span class="mono-font text-matrix-green">234,567 (27.7%)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>Encrypted Data:</span>
+                                                <span class="mono-font text-warning-amber">189,234 GB</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>Duration:</span>
+                                                <span class="mono-font text-white">28m 47s</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-300 mb-3">Protocol Distribution</h4>
+                                        <div id="protocolChart" class="w-full h-32">
+                                            <!-- Protocol distribution chart will be rendered here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="packetTimeline" class="w-full h-64 bg-steel-gray rounded border border-gray-600">
+                                    <!-- Packet timeline analysis will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-16 py-8 border-t border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-gray-400 text-sm mono-font">
+                    2025 Tor unveil copyrights | Created by MOHAMMED ZUHAIB
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="forensics.js"></script>
+</body>
+</html>

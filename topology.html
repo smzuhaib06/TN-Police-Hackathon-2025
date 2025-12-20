@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Network Topology</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --warning-amber: #ff8c00;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+            --deep-charcoal: #1a1a1a;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-charcoal);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .cyber-font {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+        
+        .glass-panel {
+            background: rgba(45, 55, 72, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.2);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .filter-btn:not(.active) {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="cyber-grid">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="cyber-font text-xl font-bold text-cyber-blue">TOR UNVEIL</h1>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Dashboard</a>
+                    <a href="analysis.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Analysis</a>
+                    <a href="forensics.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Forensics</a>
+                    <a href="reports.html" class="text-gray-300 hover:text-cyber-blue transition-colors">Reports</a>
+                    <a href="topology.html" class="text-cyber-blue font-medium border-b-2 border-cyber-blue pb-1">Topology</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="pt-20 pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-6">
+                <h1 class="cyber-font text-3xl md:text-5xl font-bold mb-3">
+                    <span class="text-cyber-blue">Network</span> 
+                    <span class="text-white">Topology</span>
+                    <span class="text-matrix-green">Visualization</span>
+                </h1>
+                <p class="text-gray-300 max-w-2xl mx-auto">
+                    Real-time visualization of TOR network circuits and relay connections. 
+                    Monitor active circuits and analyze network topology patterns.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="pb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-lg p-4 hover-lift">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-2">Network Controls</h3>
+                        <p class="text-sm text-gray-300">Filter nodes and adjust visualization settings</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <!-- Node Type Filters -->
+                        <div class="flex gap-2">
+                            <button id="filterGuard" class="bg-blue-500 text-white px-3 py-2 rounded text-sm font-medium hover:bg-opacity-80 transition-all filter-btn active" data-type="Guard">
+                                Guard
+                            </button>
+                            <button id="filterMiddle" class="bg-green-500 text-white px-3 py-2 rounded text-sm font-medium hover:bg-opacity-80 transition-all filter-btn active" data-type="Middle">
+                                Middle
+                            </button>
+                            <button id="filterExit" class="bg-yellow-500 text-black px-3 py-2 rounded text-sm font-medium hover:bg-opacity-80 transition-all filter-btn active" data-type="Exit">
+                                Exit
+                            </button>
+                        </div>
+                        <div class="border-l border-gray-600 pl-3 flex gap-2">
+                            <button id="refreshData" class="bg-cyber-blue text-black px-4 py-2 rounded-lg font-medium hover:bg-opacity-80 transition-all">
+                                🔄 Refresh
+                            </button>
+                            <button id="resetView" class="bg-matrix-green text-black px-4 py-2 rounded-lg font-medium hover:bg-opacity-80 transition-all">
+                                🎯 Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Network Topology Visualization -->
+    <section class="pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-lg p-6 hover-lift">
+                <div class="mb-6">
+                    <h3 class="cyber-font text-xl font-bold text-cyber-blue">TOR Network Topology</h3>
+                    <p class="text-sm text-gray-400 mt-1">Interactive network visualization - click and drag to explore</p>
+                </div>
+                
+                <!-- Network Topology Chart -->
+                <div id="networkTopology" style="width: 100%; height: 600px;"></div>
+                
+                <!-- Legend -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-steel-gray rounded-lg p-4">
+                        <h4 class="font-bold text-blue-400 mb-2">Guard Nodes</h4>
+                        <p class="text-sm text-gray-300">First hop in TOR circuits. Entry points to the TOR network.</p>
+                    </div>
+                    <div class="bg-steel-gray rounded-lg p-4">
+                        <h4 class="font-bold text-green-400 mb-2">Middle Nodes</h4>
+                        <p class="text-sm text-gray-300">Intermediate relays that forward traffic between nodes.</p>
+                    </div>
+                    <div class="bg-steel-gray rounded-lg p-4">
+                        <h4 class="font-bold text-yellow-400 mb-2">Exit Nodes</h4>
+                        <p class="text-sm text-gray-300">Final hop in TOR circuits. Exit traffic to the destination.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Network Statistics -->
+    <section class="pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-cyber-blue mb-2" id="totalNodes">0</div>
+                        <div class="text-gray-300">Total Nodes</div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-blue-400 mb-2" id="guardNodes">0</div>
+                        <div class="text-gray-300">Guard Nodes</div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-400 mb-2" id="middleNodes">0</div>
+                        <div class="text-gray-300">Middle Nodes</div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-lg p-6 hover-lift">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-yellow-400 mb-2" id="exitNodes">0</div>
+                        <div class="text-gray-300">Exit Nodes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-gray-400">
+                <p>TOR Unveil - Advanced TOR Network Analysis and Forensics</p>
+                <p class="mt-2 text-sm">Real-time packet capture, circuit monitoring, and correlation analysis</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Network Topology Script -->
+    <script src="network-topology.js"></script>
+    
+    <script>
+        // Additional UI functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Refresh button
+            const refreshBtn = document.getElementById('refreshData');
+            if (refreshBtn && window.networkTopology) {
+                refreshBtn.addEventListener('click', function() {
+                    const originalText = refreshBtn.innerHTML;
+                    refreshBtn.innerHTML = '⏳ Refreshing...';
+                    refreshBtn.disabled = true;
+                    
+                    window.networkTopology.loadData().finally(() => {
+                        setTimeout(() => {
+                            refreshBtn.innerHTML = originalText;
+                            refreshBtn.disabled = false;
+                        }, 1000);
+                    });
+                });
+            }
+            
+            // Reset view button
+            const resetBtn = document.getElementById('resetView');
+            if (resetBtn && window.networkTopology && window.networkTopology.chart) {
+                resetBtn.addEventListener('click', function() {
+                    window.networkTopology.chart.dispatchAction({
+                        type: 'restore'
+                    });
+                });
+            }
+            
+            // Toggle labels button
+            const toggleBtn = document.getElementById('toggleLabels');
+            if (toggleBtn && window.networkTopology && window.networkTopology.chart) {
+                let labelsVisible = true;
+                toggleBtn.addEventListener('click', function() {
+                    labelsVisible = !labelsVisible;
+                    window.networkTopology.chart.setOption({
+                        series: [{
+                            label: {
+                                show: labelsVisible
+                            }
+                        }]
+                    });
+                    toggleBtn.innerHTML = labelsVisible ? '🏷️ Hide Labels' : '🏷️ Show Labels';
+                });
+            }
+            
+            // Update statistics periodically
+            function updateStatistics() {
+                if (window.networkTopology && window.networkTopology.nodes) {
+                    const nodes = window.networkTopology.nodes;
+                    const guardNodes = nodes.filter(n => n.nodeType === 'Guard').length;
+                    const middleNodes = nodes.filter(n => n.nodeType === 'Middle').length;
+                    const exitNodes = nodes.filter(n => n.nodeType === 'Exit').length;
+                    
+                    document.getElementById('totalNodes').textContent = nodes.length;
+                    document.getElementById('guardNodes').textContent = guardNodes;
+                    document.getElementById('middleNodes').textContent = middleNodes;
+                    document.getElementById('exitNodes').textContent = exitNodes;
+                }
+            }
+            
+            // Update stats every 5 seconds
+            setInterval(updateStatistics, 5000);
+            // Initial update
+            setTimeout(updateStatistics, 1000);
+        });
+    </script>
+</body>
+</html>

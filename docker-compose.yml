@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - API_KEY=changeme
+      - TOR_CONTROL_HOST=tor
+      - TOR_CONTROL_PORT=9051
+    volumes:
+      - ./backend/reports:/app/reports
+    depends_on:
+      - tor
+    restart: unless-stopped
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+    ports:
+      - "8000:80"
+    restart: unless-stopped
+  tor:
+    image: instrumentisto/tor:latest
+    container_name: tor_service
+    volumes:
+      - ./tor/torrc:/etc/tor/torrc:ro
+    ports:
+      - "9050:9050"# socks
+      - "9051:9051"# control
+    restart: unless-stopped

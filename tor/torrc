@@ -1,0 +1,7 @@
+# Minimal torrc for local testing (not secure for production)
+ControlPort 9051
+CookieAuthentication 0
+SocksPort 0.0.0.0:9050
+# Enable logging to stdout
+Log notice stdout
+RunAsDaemon 0
