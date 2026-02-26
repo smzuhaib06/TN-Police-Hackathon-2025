@@ -54,6 +54,9 @@ class CorrelationDashboard {
 
     async getCorrelationResults() {
         try {
+            // Wait for backend to be ready
+            await this.waitForBackend();
+            
             const response = await fetch('http://localhost:5000/api/correlation/results');
             const data = await response.json();
             
@@ -66,6 +69,21 @@ class CorrelationDashboard {
             console.error('Failed to get correlation results:', error);
             return false;
         }
+    }
+
+    async waitForBackend(maxRetries = 5) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    return true;
+                }
+            } catch (error) {
+                // Backend not ready yet
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        throw new Error('Backend not available');
     }
 
     updateDashboard() {
@@ -228,20 +246,130 @@ class CorrelationDashboard {
     }
 
     initGeoMap() {
-        const mapDom = document.getElementById('worldMap');
-        if (!mapDom) return;
+        const mapContainer = document.getElementById('worldMap');
+        if (!mapContainer) return;
 
-        // Use Earth3D map instead of ECharts
-        mapDom.innerHTML = `
-            <iframe 
-                src="https://earth3dmap.com/" 
-                width="100%" 
-                height="100%" 
-                frameborder="0" 
-                style="border-radius: 8px; background: #1a1a1a;"
-                allowfullscreen>
-            </iframe>
+        // Wait for SVG to be loaded
+        if (!window.worldMapLoader || !window.worldMapLoader.isLoaded()) {
+            setTimeout(() => this.initGeoMap(), 500);
+            return;
+        }
+
+        // Get the loaded SVG element
+        const svgElement = mapContainer.querySelector('svg');
+        if (!svgElement) return;
+
+        // Clear existing pins
+        const pinsContainer = svgElement.querySelector('#geo-pins');
+        if (pinsContainer) {
+            pinsContainer.innerHTML = '';
+        }
+
+        // Add geo pins for correlation data
+        if (this.correlationData && this.correlationData.circuit_correlations.circuit_pairs.length > 0) {
+            this.addGeoPins(svgElement, this.correlationData.circuit_correlations.circuit_pairs);
+        }
+    }
+
+    addGeoPins(svgElement, circuitPairs) {
+        const pinsContainer = svgElement.querySelector('#geo-pins');
+        if (!pinsContainer) return;
+
+        // Sample coordinates for demonstration (in SVG coordinate system)
+        const locations = {
+            'US': { x: 400, y: 300, name: 'United States' },
+            'DE': { x: 1377, y: 280, name: 'Germany' },
+            'JP': { x: 2200, y: 350, name: 'Japan' },
+            'GB': { x: 1320, y: 250, name: 'United Kingdom' },
+            'FR': { x: 1350, y: 300, name: 'France' },
+            'RU': { x: 1600, y: 200, name: 'Russia' },
+            'CN': { x: 2000, y: 350, name: 'China' },
+            'BR': { x: 700, y: 700, name: 'Brazil' },
+            'AU': { x: 2300, y: 900, name: 'Australia' },
+            'CA': { x: 350, y: 200, name: 'Canada' }
+        };
+
+        circuitPairs.forEach((pair, index) => {
+            // Extract country codes from IP addresses (simplified)
+            const countries = Object.keys(locations);
+            const sourceCountry = countries[index % countries.length];
+            const destCountry = countries[(index + 1) % countries.length];
+
+            const sourceLocation = locations[sourceCountry];
+            const destLocation = locations[destCountry];
+
+            // Add connection line
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', sourceLocation.x);
+            line.setAttribute('y1', sourceLocation.y);
+            line.setAttribute('x2', destLocation.x);
+            line.setAttribute('y2', destLocation.y);
+            line.setAttribute('stroke', '#ff2d2d');
+            line.setAttribute('stroke-width', '2');
+            line.setAttribute('stroke-dasharray', '5,5');
+            line.setAttribute('opacity', '0.7');
+            line.innerHTML = `<animate attributeName="stroke-dashoffset" values="0;10" dur="1s" repeatCount="indefinite"/>`;
+            pinsContainer.appendChild(line);
+
+            // Add source pin
+            const sourcePin = this.createGeoPin(sourceLocation.x, sourceLocation.y, sourceLocation.name, pair.correlation.confidence);
+            pinsContainer.appendChild(sourcePin);
+
+            // Add destination pin
+            const destPin = this.createGeoPin(destLocation.x, destLocation.y, destLocation.name, pair.correlation.confidence);
+            pinsContainer.appendChild(destPin);
+        });
+    }
+
+    createGeoPin(x, y, location, confidence) {
+        const pin = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        pin.setAttribute('class', 'geo-pin-group');
+        pin.setAttribute('transform', `translate(${x}, ${y})`);
+
+        // Pin circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '8');
+        circle.setAttribute('class', 'geo-pin');
+        circle.setAttribute('fill', confidence > 0.7 ? '#ff2d2d' : confidence > 0.4 ? '#ffa500' : '#00ff88');
+        
+        // Pulse animation
+        const pulseCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        pulseCircle.setAttribute('r', '8');
+        pulseCircle.setAttribute('fill', 'none');
+        pulseCircle.setAttribute('stroke', '#ffffff');
+        pulseCircle.setAttribute('stroke-width', '2');
+        pulseCircle.setAttribute('opacity', '0');
+        pulseCircle.innerHTML = `
+            <animate attributeName="r" values="8;20;8" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite"/>
         `;
+
+        // Tooltip
+        const tooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tooltip.setAttribute('x', '12');
+        tooltip.setAttribute('y', '5');
+        tooltip.setAttribute('fill', '#ffffff');
+        tooltip.setAttribute('font-size', '12');
+        tooltip.setAttribute('font-family', 'monospace');
+        tooltip.setAttribute('opacity', '0');
+        tooltip.textContent = `${location} (${(confidence * 100).toFixed(1)}%)`;
+
+        pin.appendChild(pulseCircle);
+        pin.appendChild(circle);
+        pin.appendChild(tooltip);
+
+        // Hover events
+        pin.addEventListener('mouseenter', () => {
+            tooltip.setAttribute('opacity', '1');
+            circle.setAttribute('r', '12');
+        });
+        
+        pin.addEventListener('mouseleave', () => {
+            tooltip.setAttribute('opacity', '0');
+            circle.setAttribute('r', '8');
+        });
+
+        return pin;
     }
 
     getRandomCoordinates() {
@@ -273,17 +401,20 @@ class CorrelationDashboard {
     }
 
     startPeriodicUpdates() {
-        // Check for new results every 5 seconds
-        setInterval(async () => {
-            if (!this.isRunning) {
-                const hasResults = await this.getCorrelationResults();
-                if (hasResults) {
-                    this.updateDashboard();
-                    this.updateTopology();
-                    this.updateGeoMap();
+        // Delay initial check to allow backend to start
+        setTimeout(() => {
+            // Check for new results every 5 seconds
+            setInterval(async () => {
+                if (!this.isRunning) {
+                    const hasResults = await this.getCorrelationResults();
+                    if (hasResults) {
+                        this.updateDashboard();
+                        this.updateTopology();
+                        this.updateGeoMap();
+                    }
                 }
-            }
-        }, 5000);
+            }, 5000);
+        }, 3000);
     }
 
     showNotification(message, type = 'info') {

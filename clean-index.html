@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Network Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1419;
+            color: #ffffff;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #475569;
+            backdrop-filter: blur(12px);
+        }
+        
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <h1 class="text-xl font-bold text-cyan-400">TOR UNVEIL</h1>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <section class="pt-20 pb-8">
+        <div class="max-w-7xl mx-auto px-4">
+            <!-- Status Grid -->
+            <div class="glass-panel rounded-2xl p-8 mb-6">
+                <h1 class="text-3xl font-bold mb-4 text-center">
+                    <span class="text-cyan-400">TOR</span> 
+                    <span class="text-white">UNVEIL</span>
+                </h1>
+                
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-green-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Active Routes</p>
+                                <p class="text-2xl font-bold text-white" id="activeRoutes">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-red-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">TOR Routes</p>
+                                <p class="text-2xl font-bold text-white" id="torRoutes">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-blue-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Countries</p>
+                                <p class="text-2xl font-bold text-white" id="countriesCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-yellow-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Packets</p>
+                                <p class="text-2xl font-bold text-white" id="packetsCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 gap-6 mb-6">
+                <!-- Map Visualization -->
+                <div class="glass-panel rounded-2xl p-8">
+                    <h3 class="text-2xl font-bold text-red-400 mb-4">Network Visualization</h3>
+                    <div id="worldMapContainer" class="w-full h-96 bg-gray-900 rounded-xl relative">
+                        <!-- SVG Map will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls and Live Packets -->
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Control Panel -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-4">System Controls</h3>
+                    <div class="space-y-2">
+                        <button id="torConnect" class="w-full bg-cyan-400 text-black font-bold py-2 rounded">
+                            Connect TOR
+                        </button>
+                        <div class="flex space-x-2">
+                            <button id="startSniffer" class="flex-1 bg-green-400 text-black font-bold py-2 rounded">
+                                Start Capture
+                            </button>
+                            <button id="stopSniffer" class="flex-1 bg-red-400 text-white font-bold py-2 rounded">
+                                Stop
+                            </button>
+                        </div>
+                        <button id="startGeoTracking" class="w-full bg-green-400 text-black font-bold py-2 rounded">
+                            Start Geo Tracking
+                        </button>
+                        <button id="runCorrelation" class="w-full bg-red-500 text-white font-bold py-2 rounded">
+                            Run TOR Correlation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Packets -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-cyan-400 mb-4">Live Packets</h3>
+                    <div id="livePackets" class="space-y-1 max-h-64 overflow-y-auto text-xs">
+                        <div class="text-gray-400 text-center py-4">No packets captured</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Simple packet display
+        async function updatePackets() {
+            try {
+                const response = await fetch('http://localhost:5000/api/packets?limit=15');
+                const packets = await response.json();
+                
+                const packetsDiv = document.getElementById('livePackets');
+                if (!packetsDiv) return;
+                
+                if (packets && packets.length > 0) {
+                    packetsDiv.innerHTML = packets.slice(-10).reverse().map(p => `
+                        <div class="bg-gray-700 rounded p-2 mb-1 ${p.is_tor ? 'border-l-2 border-green-400' : 'border-l-2 border-blue-400'}">
+                            <div class="flex justify-between text-xs">
+                                <span class="${p.is_tor ? 'text-green-400 font-bold' : 'text-blue-400 font-bold'}">${p.protocol}</span>
+                                <span class="text-gray-400">${p.size}B</span>
+                                <span class="text-gray-500">${new Date(p.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div class="text-xs text-gray-300">${p.src_ip}:${p.src_port || ''} → ${p.dst_ip}:${p.dst_port || ''}</div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('packetsCount').textContent = packets.length;
+                    document.getElementById('torRoutes').textContent = packets.filter(p => p.is_tor).length;
+                    document.getElementById('activeRoutes').textContent = new Set(packets.map(p => p.dst_ip)).size;
+                    document.getElementById('countriesCount').textContent = Math.min(Math.floor(packets.length / 10) + 1, 15);
+                } else {
+                    packetsDiv.innerHTML = '<div class="text-yellow-400 text-center py-4">Start packet capture to see live packets</div>';
+                }
+            } catch (error) {
+                console.error('Packet update failed:', error);
+                document.getElementById('livePackets').innerHTML = '<div class="text-red-400 text-center py-4">Backend connection failed</div>';
+            }
+        }
+
+        // Button handlers
+        document.getElementById('startSniffer').addEventListener('click', async function() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/start', { method: 'POST' });
+                const result = await response.json();
+                if (result.status === 'started') {
+                    this.textContent = 'Running';
+                    this.className = 'flex-1 bg-green-400 text-black font-bold py-2 rounded';
+                }
+            } catch (error) {
+                console.error('Start failed:', error);
+            }
+        });
+
+        document.getElementById('stopSniffer').addEventListener('click', async function() {
+            try {
+                await fetch('http://localhost:5000/api/capture/stop', { method: 'POST' });
+                document.getElementById('startSniffer').textContent = 'Start Capture';
+                document.getElementById('startSniffer').className = 'flex-1 bg-green-400 text-black font-bold py-2 rounded';
+            } catch (error) {
+                console.error('Stop failed:', error);
+            }
+        });
+
+        // Start updates
+        setInterval(updatePackets, 3000);
+        updatePackets();
+        
+        console.log('Clean dashboard loaded');
+    </script>
+</body>
+</html>

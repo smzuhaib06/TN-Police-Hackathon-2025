@@ -15,48 +15,6 @@ import random
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Add backend directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, os.path.dirname(__file__))
-
-# Import scapy first
-try:
-    import scapy.all
-    SCAPY_AVAILABLE = True
-except ImportError:
-    SCAPY_AVAILABLE = False
-
-# Import geo database
-try:
-    import geoip2.database
-    import geoip2.errors
-    GEOIP_AVAILABLE = True
-except ImportError:
-    GEOIP_AVAILABLE = False
-
-# Import correlation model
-try:
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from ip_corr import analyze_tor_traffic
-    IP_CORR_AVAILABLE = True
-except ImportError:
-    IP_CORR_AVAILABLE = False
-
-# Import backend modules
-try:
-    from backend.packet_sniffer import PacketSniffer
-except ImportError:
-    try:
-        from packet_sniffer import PacketSniffer
-    except ImportError:
-        PacketSniffer = None
-
-print(f"[INIT] Scapy: {SCAPY_AVAILABLE}, GeoIP: {GEOIP_AVAILABLE}, IP Correlation: {IP_CORR_AVAILABLE}")
-
-sniffer_instance = None
-sniffer_lock = threading.Lock()
-start_time = time.time()
-
 # Simulated packet data for demo
 demo_packets = []
 demo_active = False
@@ -81,7 +39,6 @@ def generate_demo_packet():
     is_tor = random.random() < 0.15  # 15% TOR traffic
     
     if is_tor:
-        # TOR uses specific ports
         dst_port = random.choice([9001, 9030, 443, 80])
         protocol = random.choice(['TCP', 'HTTPS'])
     else:
@@ -108,14 +65,12 @@ def demo_packet_generator():
     global demo_packets, demo_active
     
     while demo_active:
-        # Generate 1-3 packets per second
         for _ in range(random.randint(1, 3)):
             if not demo_active:
                 break
             packet = generate_demo_packet()
             demo_packets.append(packet)
             
-            # Keep only last 1000 packets
             if len(demo_packets) > 1000:
                 demo_packets = demo_packets[-1000:]
         
@@ -133,16 +88,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Handle GET requests"""
-        global sniffer_instance, sniffer_lock, demo_packets, demo_active
+        global demo_packets, demo_active
         
-        if self.path == '/' or self.path.endswith('.html'):
-            self.serve_file(self.path[1:] if self.path != '/' else 'complete-dashboard.html', 'text/html')
+        if self.path == '/' or self.path == '/index.html':
+            self.serve_file('index.html', 'text/html')
             return
         elif self.path.endswith('.js'):
             self.serve_file(self.path[1:], 'application/javascript')
             return
         elif self.path.endswith('.css'):
             self.serve_file(self.path[1:], 'text/css')
+            return
+        elif self.path.endswith('.html'):
+            self.serve_file(self.path[1:], 'text/html')
             return
         
         self.send_response(200)
@@ -155,20 +113,12 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/api/health':
             data = {
                 'status': 'healthy',
-                'sniffer_available': SCAPY_AVAILABLE or demo_active,
+                'sniffer_available': True,
                 'sniffer_active': demo_active,
-                'sniffer_mode': 'demo' if demo_active else ('real' if SCAPY_AVAILABLE else 'unavailable'),
+                'sniffer_mode': 'demo',
                 'tor_connected': False,
-                'admin_required': not SCAPY_AVAILABLE,
+                'admin_required': False,
                 'is_admin': True
-            }
-        elif self.path == '/api/status':
-            data = {
-                'packets_captured': len(demo_packets),
-                'tor_packets': len([p for p in demo_packets if p.get('is_tor', False)]),
-                'sniffer_active': demo_active,
-                'total_bytes': sum(p.get('length', 0) for p in demo_packets),
-                'flow_count': len(set(f"{p['src_ip']}-{p['dst_ip']}" for p in demo_packets))
             }
         elif self.path.startswith('/api/packets') or self.path.startswith('/api/capture/packets'):
             from urllib.parse import parse_qs, urlparse
@@ -177,7 +127,6 @@ class Handler(BaseHTTPRequestHandler):
             
             packets = demo_packets[-limit:] if len(demo_packets) > limit else demo_packets
             data = packets
-            print(f"[API] Packets: {len(demo_packets)} total, returning {len(packets)}")
         elif self.path == '/api/geo/packets':
             geo_packets = []
             for packet in demo_packets[-20:]:
@@ -217,7 +166,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Handle POST requests"""
-        global sniffer_instance, sniffer_lock, demo_active, demo_packets
+        global demo_active, demo_packets
         
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
@@ -240,7 +189,6 @@ class Handler(BaseHTTPRequestHandler):
                 packet_count = len(demo_packets)
                 data = {'status': 'stopped', 'packets_captured': packet_count}
             elif self.path == '/api/tor/correlate':
-                # Simulate TOR correlation analysis
                 tor_packets = [p for p in demo_packets if p.get('is_tor', False)]
                 unique_ips = set(p['dst_ip'] for p in demo_packets if p.get('dst_ip') and not p['dst_ip'].startswith(('192.168.', '10.', '127.')))
                 
@@ -277,12 +225,6 @@ class Handler(BaseHTTPRequestHandler):
                                 'dst_ip': random.choice(list(unique_ips)) if unique_ips else '199.87.154.255',
                                 'tor_confidence': random.randint(75, 92),
                                 'tor_reasons': ['HTTPS pattern', 'Traffic analysis', 'Node fingerprint']
-                            },
-                            {
-                                'src_ip': '192.168.1.100', 
-                                'dst_ip': random.choice(list(unique_ips)) if unique_ips else '176.10.99.200',
-                                'tor_confidence': random.randint(80, 95),
-                                'tor_reasons': ['Circuit correlation', 'Timing pattern', 'Exit node match']
                             }
                         ],
                         'user_ips': list(set(p['src_ip'] for p in tor_packets)),
@@ -293,14 +235,8 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 data = {'error': 'Not found'}
             
-            try:
-                response_data = json.dumps(data, default=str)
-                self.wfile.write(response_data.encode())
-            except Exception:
-                try:
-                    self.wfile.write(b'{"error":"Response error"}')
-                except:
-                    pass
+            response_data = json.dumps(data, default=str)
+            self.wfile.write(response_data.encode())
             
         except Exception as e:
             error_data = {'status': 'error', 'message': str(e)}
@@ -392,7 +328,6 @@ class Handler(BaseHTTPRequestHandler):
 def run_server():
     """Run the HTTP server"""
     print("Starting TOR Unveil Enhanced Backend...")
-    print(f"Scapy available: {SCAPY_AVAILABLE}")
     print("Demo mode enabled for packet generation")
     print("Starting server on port 5000...")
     
@@ -400,7 +335,7 @@ def run_server():
     server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
     print("Backend ready at http://localhost:5000")
-    print("Open http://localhost:5000/complete-dashboard.html to view dashboard")
+    print("Open http://localhost:5000/index.html to view dashboard")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

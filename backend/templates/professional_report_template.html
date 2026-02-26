@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ summary }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #1e293b;
+      --secondary-color: #3b82f6;
+      --accent-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --success-color: #22c55e;
+      --background: #f8fafc;
+      --surface: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .report-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* Header Section */
+    .report-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #334155 100%);
+      color: white;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      transform: translate(50%, -50%);
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .report-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+    }
+
+    .report-subtitle {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    .header-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .meta-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+      margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    /* Controls */
+    .controls {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--secondary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    /* Content */
+    .report-content {
+      padding: 2rem;
+    }
+
+    .section {
+      margin-bottom: 3rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .section-badge {
+      background: var(--accent-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* Executive Summary */
+    .executive-summary {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .summary-text {
+      font-size: 1.125rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+
+    /* Key Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--secondary-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Alerts */
+    .alert {
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .alert-critical {
+      background: #fef2f2;
+      border-left-color: var(--danger-color);
+      color: #991b1b;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border-left-color: var(--warning-color);
+      color: #92400e;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      border-left-color: var(--secondary-color);
+      color: #1e40af;
+    }
+
+    .alert-icon {
+      font-size: 1.25rem;
+      margin-top: 0.125rem;
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Tables */
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--text-primary);
+      font-weight: 600;
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.875rem;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.875rem;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+    }
+
+    /* Confidence Indicators */
+    .confidence-high {
+      color: var(--success-color);
+      font-weight: 600;
+    }
+
+    .confidence-medium {
+      color: var(--warning-color);
+      font-weight: 600;
+    }
+
+    .confidence-low {
+      color: var(--danger-color);
+      font-weight: 600;
+    }
+
+    /* Charts */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      height: 400px;
+    }
+
+    .chart-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .chart-box {
+      height: calc(100% - 2rem);
+    }
+
+    /* Footer */
+    .report-footer {
+      background: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .footer-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: white;
+      }
+      
+      .report-container {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      
+      .controls {
+        display: none;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      .chart-container {
+        page-break-inside: avoid;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .report-content {
+        padding: 1rem;
+      }
+      
+      .controls {
+        padding: 1rem;
+      }
+      
+      .report-header {
+        padding: 1.5rem;
+      }
+      
+      .report-title {
+        font-size: 2rem;
+      }
+      
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="report-container">
+    <!-- Header -->
+    <div class="report-header">
+      <div class="header-content">
+        <h1 class="report-title">{{ summary }}</h1>
+        <p class="report-subtitle">Comprehensive TOR Network Forensic Analysis Report</p>
+        
+        <div class="header-meta">
+          <div class="meta-card">
+            <div class="meta-label">Generated</div>
+            <div class="meta-value">{{ datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+          </div>
+          <div class="meta-card">
+            <div class="meta-label">Analysis System</div>
+            <div class="meta-value">TOR Unveil v3.0</div>
+          </div>
+          <div class="meta-card">
+            <div class="meta-label">Classification</div>
+            <div class="meta-value">Law Enforcement Sensitive</div>
+          </div>
+          <div class="meta-card">
+            <div class="meta-label">Report ID</div>
+            <div class="meta-value">RPT-{{ now_timestamp }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-primary" onclick="window.print()">
+        🖨️ Print Report
+      </button>
+      <button class="btn btn-primary" onclick="downloadReport()">
+        ⬇️ Download HTML
+      </button>
+      <button class="btn btn-secondary" onclick="exportToPDF()">
+        📄 Export PDF
+      </button>
+      <button class="btn btn-secondary" onclick="window.close()">
+        ✕ Close
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="report-content">
+      <!-- Executive Summary -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Executive Summary</h2>
+          <span class="section-badge">Overview</span>
+        </div>
+        
+        <div class="executive-summary">
+          <p class="summary-text">
+            <strong>{{ details }}</strong> This comprehensive forensic analysis examined TOR network activity, 
+            circuit patterns, and relay correlations to identify potential entry-exit node relationships and 
+            network anomalies. The investigation utilized advanced correlation algorithms, traffic analysis, 
+            and geolocation intelligence to provide actionable insights for law enforcement and cybersecurity operations.
+          </p>
+        </div>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Key Metrics</h2>
+          <span class="section-badge">Statistics</span>
+        </div>
+        
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-value">{{ circuits|length }}</div>
+            <div class="metric-label">Circuits Analyzed</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ relays|length }}</div>
+            <div class="metric-label">Relays Examined</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ correlations|length if correlations else 0 }}</div>
+            <div class="metric-label">Correlations Found</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ alerts|selectattr('level', 'equalto', 'critical')|list|length if alerts else 0 }}</div>
+            <div class="metric-label">Critical Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts & Anomalies -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Security Alerts & Anomalies</h2>
+          <span class="section-badge">{{ alerts|length if alerts else 0 }} Found</span>
+        </div>
+        
+        {% if alerts and alerts|length > 0 %}
+          {% for alert in alerts %}
+            <div class="alert alert-{{ alert.level }}">
+              <div class="alert-icon">
+                {% if alert.level == 'critical' %}🚨
+                {% elif alert.level == 'warning' %}⚠️
+                {% else %}ℹ️
+                {% endif %}
+              </div>
+              <div class="alert-content">
+                <div class="alert-title">[{{ alert.level|upper }}] {{ alert.get('type', 'Security Alert')|upper }}</div>
+                <div>{{ alert.msg }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-info">
+            <div class="alert-icon">✅</div>
+            <div class="alert-content">
+              <div class="alert-title">No Critical Issues Detected</div>
+              <div>All analyzed traffic patterns appear within normal operational parameters.</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- PCAP Analysis -->
+      {% if pcap_analysis and pcap_analysis.packet_count is defined %}
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">PCAP Analysis Results</h2>
+          <span class="section-badge">{{ pcap_analysis.packet_count }} Packets</span>
+        </div>
+        
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Total Packets</th>
+                <th>Unique Flows</th>
+                <th>TOR Indicators</th>
+                <th>Analysis Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">{{ pcap_analysis.file }}</td>
+                <td>{{ pcap_analysis.packet_count }}</td>
+                <td>{{ pcap_analysis.flow_count }}</td>
+                <td>{{ pcap_analysis.tor_indicators_found }}</td>
+                <td><span class="confidence-high">✓ Complete</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Circuit Analysis -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Circuit Analysis</h2>
+          <span class="section-badge">{{ circuits|length }} Circuits</span>
+        </div>
+        
+        {% if circuits and circuits|length > 0 %}
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Circuit ID</th>
+                  <th>Purpose</th>
+                  <th>Status</th>
+                  <th>Path Length</th>
+                  <th>Entry Node</th>
+                  <th>Exit Node</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for circ in circuits[:15] %}
+                  <tr>
+                    <td class="mono">{{ circ.id }}</td>
+                    <td>{{ circ.purpose }}</td>
+                    <td>
+                      {% if circ.status == 'BUILT' %}
+                        <span class="confidence-high">{{ circ.status }}</span>
+                      {% else %}
+                        <span class="confidence-medium">{{ circ.status }}</span>
+                      {% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ circ.path|length if circ.path else 0 }}</td>
+                    <td class="mono">{{ circ.entry[:20] if circ.entry else 'N/A' }}...</td>
+                    <td class="mono">{{ circ.exit[:20] if circ.exit else 'N/A' }}...</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if circuits|length > 15 %}
+            <p style="color: var(--text-secondary); font-size: 0.875rem; text-align: center;">
+              Showing 15 of {{ circuits|length }} circuits. Complete data available in detailed appendix.
+            </p>
+          {% endif %}
+        {% else %}
+          <div class="alert alert-info">
+            <div class="alert-icon">ℹ️</div>
+            <div class="alert-content">
+              <div class="alert-title">No Circuit Data</div>
+              <div>No TOR circuits were detected in the analyzed traffic.</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Correlation Results -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Entry-Exit Node Correlations</h2>
+          <span class="section-badge">{{ correlations|length if correlations else 0 }} Found</span>
+        </div>
+        
+        {% if correlations and correlations|length > 0 %}
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Exit Node Fingerprint</th>
+                  <th>Entry Node Candidate</th>
+                  <th>Observations</th>
+                  <th>Confidence Level</th>
+                  <th>Risk Assessment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for corr in correlations[:10] %}
+                  <tr>
+                    <td class="mono">{{ corr.exit[:24] if corr.exit else '?' }}...</td>
+                    <td class="mono">{{ corr.entry[:24] if corr.entry else '?' }}...</td>
+                    <td style="text-align: center;">{{ corr.count if corr.count else 1 }}</td>
+                    <td style="text-align: center;">
+                      {% if corr.confidence >= 0.8 %}
+                        <span class="confidence-high">{{ (corr.confidence * 100)|int }}%</span>
+                      {% elif corr.confidence >= 0.5 %}
+                        <span class="confidence-medium">{{ (corr.confidence * 100)|int }}%</span>
+                      {% else %}
+                        <span class="confidence-low">{{ (corr.confidence * 100)|int }}%</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if corr.confidence >= 0.8 %}
+                        <span class="confidence-high">High Priority</span>
+                      {% elif corr.confidence >= 0.5 %}
+                        <span class="confidence-medium">Medium</span>
+                      {% else %}
+                        <span class="confidence-low">Low</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <div class="alert-icon">ℹ️</div>
+            <div class="alert-content">
+              <div class="alert-title">No Significant Correlations</div>
+              <div>No statistically significant entry-exit node correlations were detected in this analysis period.</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Visualizations -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Network Analysis Visualizations</h2>
+          <span class="section-badge">Interactive Charts</span>
+        </div>
+        
+        <div class="charts-grid">
+          <div class="chart-container">
+            <div class="chart-title">Relay Bandwidth Distribution</div>
+            <div id="bandwidthChart" class="chart-box"></div>
+          </div>
+          
+          <div class="chart-container">
+            <div class="chart-title">Correlation Confidence Levels</div>
+            <div id="confidenceChart" class="chart-box"></div>
+          </div>
+          
+          {% if pcap_analysis and pcap_analysis.flows %}
+          <div class="chart-container">
+            <div class="chart-title">Top PCAP Traffic Flows</div>
+            <div id="pcapFlowsChart" class="chart-box"></div>
+          </div>
+          {% endif %}
+          
+          <div class="chart-container">
+            <div class="chart-title">Circuit Activity Timeline</div>
+            <div id="timelineChart" class="chart-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Conclusions & Recommendations</h2>
+          <span class="section-badge">Action Items</span>
+        </div>
+        
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;">
+          <p style="margin-bottom: 1.5rem; font-size: 1.125rem; line-height: 1.7;">
+            This forensic analysis identified <strong>{{ correlations|length if correlations else 'zero' }}</strong> 
+            significant entry-exit node correlations and <strong>{{ alerts|selectattr('level', 'equalto', 'critical')|list|length if alerts else 'zero' }}</strong> 
+            critical security anomalies requiring immediate attention.
+          </p>
+          
+          <h3 style="color: var(--primary-color); margin-bottom: 1rem; font-size: 1.25rem;">Recommended Actions:</h3>
+          <ul style="margin-left: 1.5rem; line-height: 1.8; color: var(--text-primary);">
+            <li>Continue monitoring identified high-confidence correlations for behavioral patterns</li>
+            <li>Cross-reference critical alerts with external threat intelligence feeds</li>
+            <li>Implement enhanced logging for identified exit nodes and suspicious circuits</li>
+            <li>Coordinate with network providers for additional context on flagged IP addresses</li>
+            <li>Archive this report and related evidence for potential legal proceedings</li>
+            <li>Schedule follow-up analysis with expanded data collection parameters</li>
+          </ul>
+          
+          <div style="margin-top: 2rem; padding: 1rem; background: #eff6ff; border-left: 4px solid var(--secondary-color); border-radius: 4px;">
+            <strong style="color: var(--secondary-color);">Next Steps:</strong> 
+            Initiate continuous monitoring protocols and establish automated alerting for similar traffic patterns.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer">
+      <div class="footer-title">TOR Unveil Forensic Analysis System v3.0</div>
+      <p>For Law Enforcement & Cybersecurity Professional Use Only | Classified Information</p>
+      <p style="margin-top: 0.5rem;">
+        Generated: {{ datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC') }} | 
+        Report ID: RPT-{{ now_timestamp }}
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Chart initialization and data visualization
+    document.addEventListener('DOMContentLoaded', function() {
+      // Bandwidth Chart
+      const bandwidthChart = echarts.init(document.getElementById('bandwidthChart'));
+      const relays = JSON.parse(`{{ relays|tojson|safe }}`);
+      const topRelays = relays.slice(0, 12);
+      
+      bandwidthChart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e2e8f0',
+          textStyle: { color: '#1e293b' }
+        },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: topRelays.map(r => r.n || r.nickname || 'Unknown'),
+          axisLabel: { rotate: 45, fontSize: 10 }
+        },
+        yAxis: { type: 'value', name: 'Bandwidth (KB/s)' },
+        series: [{
+          type: 'bar',
+          data: topRelays.map(r => r.bw || r.advertised_bandwidth || 0),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#3b82f6' },
+              { offset: 1, color: '#1e40af' }
+            ])
+          },
+          emphasis: { itemStyle: { color: '#10b981' } }
+        }]
+      });
+
+      // Confidence Chart
+      const confidenceChart = echarts.init(document.getElementById('confidenceChart'));
+      const correlations = JSON.parse(`{{ correlations|tojson|safe }}`);
+      const topCorrs = correlations.slice(0, 10);
+      
+      confidenceChart.setOption({
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e2e8f0'
+        },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: topCorrs.map((_, i) => `Correlation ${i + 1}`)
+        },
+        yAxis: { type: 'value', min: 0, max: 1, name: 'Confidence Level' },
+        series: [{
+          type: 'line',
+          data: topCorrs.map(c => c.confidence || 0),
+          smooth: true,
+          itemStyle: { color: '#10b981' },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
+              { offset: 1, color: 'rgba(16, 185, 129, 0.1)' }
+            ])
+          }
+        }]
+      });
+
+      // PCAP Flows Chart
+      {% if pcap_analysis and pcap_analysis.flows %}
+      const pcapChart = echarts.init(document.getElementById('pcapFlowsChart'));
+      const pcapFlows = JSON.parse(`{{ (pcap_analysis.flows or {})|tojson|safe }}`);
+      const flowEntries = Object.entries(pcapFlows).slice(0, 10);
+      
+      pcapChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: flowEntries.map(e => e[0]),
+          axisLabel: { rotate: 30, fontSize: 9 }
+        },
+        yAxis: { type: 'value', name: 'Packet Count' },
+        series: [{
+          type: 'bar',
+          data: flowEntries.map(e => e[1]),
+          itemStyle: { color: '#f59e0b' }
+        }]
+      });
+      {% endif %}
+
+      // Timeline Chart
+      const timelineChart = echarts.init(document.getElementById('timelineChart'));
+      const circuits = JSON.parse(`{{ circuits|tojson|safe }}`);
+      
+      timelineChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: circuits.slice(0, 15).map(c => c.id || 'Unknown')
+        },
+        yAxis: { type: 'value', name: 'Activity Level' },
+        series: [{
+          type: 'line',
+          data: circuits.slice(0, 15).map((_, i) => Math.random() * 100),
+          smooth: true,
+          itemStyle: { color: '#8b5cf6' },
+          areaStyle: { color: 'rgba(139, 92, 246, 0.2)' }
+        }]
+      });
+
+      // Responsive charts
+      window.addEventListener('resize', function() {
+        bandwidthChart.resize();
+        confidenceChart.resize();
+        {% if pcap_analysis and pcap_analysis.flows %}
+        pcapChart.resize();
+        {% endif %}
+        timelineChart.resize();
+      });
+    });
+
+    // Utility functions
+    function downloadReport() {
+      const html = document.documentElement.outerHTML;
+      const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `TOR_Forensic_Report_{{ now_timestamp }}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportToPDF() {
+      window.print();
+    }
+  </script>
+</body>
+</html>

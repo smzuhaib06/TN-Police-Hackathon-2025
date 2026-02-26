@@ -1,0 +1,23 @@
+#!/bin/sh
+# Block commits with staged files > 100MB
+max_bytes=104857600
+
+flagged=$( 
+  git diff --cached --name-only --diff-filter=AM |
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    size=$(git cat-file -s -- ":$file" 2>/dev/null || echo 0)
+    if [ "$size" -gt "$max_bytes" ]; then
+      printf "%s\n" "$file"
+    fi
+  done
+)
+
+if [ -n "$flagged" ]; then
+  echo "The following staged files exceed 100MB:" >&2
+  echo "$flagged" | sed 's/^/  - /' >&2
+  echo "Commit blocked. Avoid committing files over 100MB. Consider Git LFS for large binaries." >&2
+  exit 1
+fi
+
+exit 0

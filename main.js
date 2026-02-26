@@ -953,7 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check for enhanced features availability
     setTimeout(async () => {
         try {
-            const response = await fetch('http://localhost:5001/api/health');
+            const response = await fetch('http://localhost:5000/api/health');
             const health = await response.json();
             
             if (health.enhanced_features) {
@@ -1032,7 +1032,7 @@ function generateEnhancedReport() {
 
 function exportEnhancedData() {
     // Export all enhanced capture data
-    fetch('http://localhost:5001/api/enhanced/tor-capture/export', {
+    fetch('http://localhost:5000/api/enhanced/tor-capture/export', {
         headers: { 'X-API-KEY': 'changeme' }
     })
     .then(r => r.json())

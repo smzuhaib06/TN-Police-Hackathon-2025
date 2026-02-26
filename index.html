@@ -5,19 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TOR Unveil - Network Analysis Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --cyber-blue: #00d4ff;
             --matrix-green: #00ff88;
-            --warning-amber: #100a02;
+            --warning-amber: #fbbf24;
             --critical-red: #ff2d2d;
             --steel-gray: #2d3748;
-            --deep-charcoal: #1a1a1a;
-            --glass-bg: rgba(30, 41, 59, 0.85);
         }
         
         body {
@@ -28,58 +25,33 @@
             min-height: 100vh;
         }
         
-        .cyber-font {
-            font-family: 'Orbitron', monospace;
-        }
-        
-        .mono-font {
-            font-family: 'JetBrains Mono', monospace;
-        }
+        .cyber-font { font-family: 'Orbitron', monospace; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
         
         .cyber-grid {
             background-image: 
                 radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(0, 255, 136, 0.06) 0%, transparent 50%),
                 linear-gradient(rgba(0, 212, 255, 0.08) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 212, 255, 0.08) 1px, transparent 1px);
-            background-size: 200px 200px, 300px 300px, 40px 40px, 40px 40px;
+            background-size: 200px 200px, 40px 40px, 40px 40px;
             animation: gridMove 30s linear infinite;
         }
         
         @keyframes gridMove {
-            0% { background-position: 0 0, 0 0, 0 0, 0 0; }
-            100% { background-position: 200px 200px, -300px -300px, 40px 40px, 40px 40px; }
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 200px 200px, 40px 40px, 40px 40px; }
         }
         
         .status-indicator {
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            position: relative;
             animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .status-indicator::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            border: 2px solid currentColor;
-            opacity: 0;
-            animation: ripple 2s ease-in-out infinite;
         }
         
         @keyframes pulse {
             0%, 100% { opacity: 0.7; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.1); }
-        }
-        
-        @keyframes ripple {
-            0% { transform: scale(0.8); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
         }
         
         .glass-panel {
@@ -89,22 +61,24 @@
             backdrop-filter: blur(12px);
         }
         
-        .hover-lift {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .hero-glow {
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
         
-        .hover-lift:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 212, 255, 0.2);
+        #map {
+            background: #1a1a1a;
+            border-radius: 8px;
+            height: 400px;
+            width: 100%;
+            min-width: 100%;
+            position: relative;
         }
         
-        .typing-cursor {
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
+        #originMap {
+            width: 100% !important;
+            height: 256px !important;
+            min-width: 100% !important;
+            position: relative;
         }
         
         .nav-link {
@@ -126,72 +100,6 @@
         .nav-link:hover::after {
             width: 100%;
         }
-        
-        .nav-link.active::after {
-            width: 100%;
-        }
-        
-        .cyber-button {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .cyber-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .cyber-button:hover::before {
-            left: 100%;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border: 1px solid #475569;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        .stat-card:hover {
-            background: linear-gradient(135deg, #334155 0%, #475569 100%);
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 212, 255, 0.2);
-        }
-        
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.9);
-            border: 1px solid #475569;
-            backdrop-filter: blur(10px);
-        }
-        
-        .hero-glow {
-            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-        }
-        
-        .network-viz {
-            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.05) 0%, transparent 70%);
-        }
-        
-        .loading-spinner {
-            border: 3px solid rgba(0, 212, 255, 0.3);
-            border-top: 3px solid var(--cyber-blue);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body class="cyber-grid">
@@ -204,18 +112,19 @@
                     <img src="resources/hackathon-logo.png" alt="HACKATHON 2025" class="h-8 w-8">
                     <h1 class="cyber-font text-xl font-bold text-cyber-blue">TOR UNVEIL</h1>
                 </div>
-                <div class="flex space-x-6">
-                    <a href="index.html" class="nav-link active text-cyber-blue font-medium pb-1">Dashboard</a>
-                    <a href="topology.html" class="nav-link text-gray-300 hover:text-cyber-blue pb-1">Topology</a>
-                    <a href="analysis.html" class="nav-link text-gray-300 hover:text-cyber-blue pb-1">Analysis</a>
-                    <a href="forensics.html" class="nav-link text-gray-300 hover:text-cyber-blue pb-1">Forensics</a>
-                    <a href="reports.html" class="nav-link text-gray-300 hover:text-cyber-blue pb-1">Reports</a>
+                <div class="flex items-center space-x-6">
+                    <a href="index.html" class="nav-link text-cyber-blue font-medium">Dashboard</a>
+                    <a href="analysis.html" class="nav-link text-gray-300 hover:text-cyber-blue font-medium">Analysis</a>
+                    <a href="forensics.html" class="nav-link text-gray-300 hover:text-cyber-blue font-medium">Forensics</a>
+                    <a href="reports.html" class="nav-link text-gray-300 hover:text-cyber-blue font-medium">Reports</a>
+                    <a href="topology.html" class="nav-link text-gray-300 hover:text-cyber-blue font-medium">Topology</a>
+                    <div id="backendStatus" class="text-xs px-2 py-1 rounded bg-red-900 text-red-300">Backend Offline</div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Enhanced Hero Section -->
+    <!-- Hero Section -->
     <section class="pt-20 pb-8">
         <div class="max-w-7xl mx-auto px-4">
             <div class="glass-panel rounded-2xl p-8 mb-6 border-2 border-gray-600 hover:border-cyber-blue transition-all duration-500">
@@ -228,45 +137,65 @@
                     <p class="text-gray-300 text-lg mb-6 max-w-2xl mx-auto">Advanced TOR Network Analysis & Digital Forensics Platform</p>
                 </div>
                 
-                <!-- Enhanced Status Grid -->
+                <!-- Status Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-matrix-green transition-all duration-300 hover:shadow-lg hover:shadow-matrix-green/20">
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-matrix-green transition-all duration-300">
                         <div class="flex items-center space-x-3">
-                            <div class="status-indicator bg-matrix-green flex-shrink-0"></div>
+                            <div class="status-indicator bg-matrix-green"></div>
                             <div>
-                                <div class="text-xs text-gray-400 uppercase tracking-wide">Network</div>
-                                <div id="networkStatus" class="text-sm font-bold text-matrix-green">Ready</div>
+                                <p class="text-gray-400 text-sm">Active Routes</p>
+                                <p class="text-2xl font-bold text-white mono-font" id="activeRoutes">0</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-cyber-blue transition-all duration-300 hover:shadow-lg hover:shadow-cyber-blue/20">
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-critical-red transition-all duration-300">
                         <div class="flex items-center space-x-3">
-                            <div class="status-indicator bg-cyber-blue flex-shrink-0"></div>
+                            <div class="status-indicator bg-critical-red"></div>
                             <div>
-                                <div class="text-xs text-gray-400 uppercase tracking-wide">System</div>
-                                <div id="enhancedStatus" class="text-sm font-bold text-cyber-blue">Online</div>
+                                <p class="text-gray-400 text-sm">TOR Routes</p>
+                                <p class="text-2xl font-bold text-white mono-font" id="torRoutes">0</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-emerald-400 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/20">
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-cyber-blue transition-all duration-300">
                         <div class="flex items-center space-x-3">
-                            <div class="status-indicator bg-emerald-400 flex-shrink-0"></div>
+                            <div class="status-indicator bg-cyber-blue"></div>
                             <div>
-                                <div class="text-xs text-gray-400 uppercase tracking-wide">TOR</div>
-                                <div id="torStatus" class="text-sm font-bold text-emerald-400">Unknown</div>
+                                <p class="text-gray-400 text-sm">Countries</p>
+                                <p class="text-2xl font-bold text-white mono-font" id="countriesCount">0</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-yellow-400 transition-all duration-300 hover:shadow-lg hover:shadow-yellow-400/20">
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-600 hover:border-warning-amber transition-all duration-300">
                         <div class="flex items-center space-x-3">
-                            <div class="status-indicator bg-yellow-400 flex-shrink-0"></div>
+                            <div class="status-indicator bg-warning-amber"></div>
                             <div>
-                                <div class="text-xs text-gray-400 uppercase tracking-wide">Sniffer</div>
-                                <div id="snifferStatus" class="text-sm font-bold text-yellow-400">Idle</div>
+                                <p class="text-gray-400 text-sm">Packets</p>
+                                <p class="text-2xl font-bold text-white mono-font" id="packetsCount">0</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Indicators -->
+                <div class="mt-6 text-center">
+                    <div class="inline-flex items-center space-x-2 bg-gray-800 rounded-full px-4 py-2 border border-matrix-green">
+                        <div class="status-indicator bg-matrix-green"></div>
+                        <span class="text-matrix-green font-medium">LIVE CAPTURE ACTIVE</span>
+                        <span class="text-gray-400 text-sm mono-font" id="liveTimestamp"></span>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-4 mt-4">
+                        <div class="inline-flex items-center space-x-2 bg-gray-800 rounded-full px-3 py-1 border" id="backendStatusIndicator">
+                            <div class="status-indicator bg-critical-red" id="backendIndicator"></div>
+                            <span class="text-critical-red text-xs font-medium" id="backendText">BACKEND OFFLINE</span>
+                        </div>
+                        <div class="inline-flex items-center space-x-2 bg-gray-800 rounded-full px-3 py-1 border" id="torStatusIndicator">
+                            <div class="status-indicator bg-warning-amber" id="torIndicator"></div>
+                            <span class="text-warning-amber text-xs font-medium" id="torText">TOR DISCONNECTED</span>
                         </div>
                     </div>
                 </div>
@@ -274,477 +203,551 @@
         </div>
     </section>
 
-    <!-- Enhanced Dashboard -->
+    <!-- Dashboard -->
     <section class="pb-8">
         <div class="max-w-7xl mx-auto px-4">
-            <!-- Enhanced Stats Grid -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 mb-10">
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-cyber-blue">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Active Circuits</div>
-                    <div id="activeCircuits" class="mono-font text-3xl text-cyber-blue font-bold mb-1">247</div>
-                    <div class="text-xs text-gray-500">+12 today</div>
-                </div>
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-blue-400">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Guard Nodes</div>
-                    <div id="guardNodes" class="mono-font text-3xl text-blue-400 font-bold mb-1">1,847</div>
-                    <div class="text-xs text-gray-500">+5 today</div>
-                </div>
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-green-400">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Middle Relays</div>
-                    <div class="mono-font text-3xl text-green-400 font-bold mb-1">4,521</div>
-                    <div class="text-xs text-gray-500">+23 today</div>
-                </div>
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-yellow-400">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Exit Nodes</div>
-                    <div id="exitNodes" class="mono-font text-3xl text-yellow-400 font-bold mb-1">1,203</div>
-                    <div class="text-xs text-gray-500">+8 today</div>
-                </div>
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-purple-400">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Countries</div>
-                    <div id="countriesCount" class="mono-font text-3xl text-purple-400 font-bold mb-1">87</div>
-                    <div class="text-xs text-gray-500">global reach</div>
-                </div>
-                <div class="stat-card rounded-2xl p-6 text-center hover-lift border-2 border-transparent hover:border-orange-400">
-                    <div class="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wider">Packets/sec</div>
-                    <div id="packetsCapture" class="mono-font text-3xl text-orange-400 font-bold mb-1">12.4K</div>
-                    <div class="text-xs text-gray-500">real-time</div>
-                </div>
-            </div>
-
-            <!-- Main Content Grid -->
+            <!-- Correlation Analysis -->
             <div class="grid grid-cols-1 gap-6 mb-6">
-                
-                <!-- Real-time Correlation Analysis -->
-                <div>
-                    <div class="glass-panel rounded-2xl p-8 shadow-2xl border-2 border-gray-600 hover:border-red-400 transition-all duration-500">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <h3 class="cyber-font text-2xl font-bold text-red-400 mb-2">Correlation Analysis</h3>
-                                <p class="text-sm text-gray-400">Real-time traffic pattern analysis and correlation detection</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <button id="runCorrelation" class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm rounded-xl font-bold hover:from-red-600 hover:to-red-700 transition-all shadow-lg transform hover:scale-105">
-                                    ⚡ Run Analysis
-                                </button>
-                                <label class="inline-flex items-center text-sm cursor-pointer hover:text-white transition-colors bg-gray-800 rounded-lg px-3 py-2">
-                                    <input type="checkbox" id="autoCorrelation" class="mr-2 w-4 h-4 accent-red-400">
-                                    <span class="text-gray-300">Auto Mode</span>
-                                </label>
-                            </div>
+                <div class="glass-panel rounded-2xl p-8 shadow-2xl border-2 border-gray-600 hover:border-red-400 transition-all duration-500">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 class="cyber-font text-2xl font-bold text-red-400 mb-2">Correlation Analysis</h3>
+                            <p class="text-sm text-gray-400">Real-time traffic pattern analysis and correlation detection</p>
                         </div>
-                        
-                        <!-- Correlation Metrics -->
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <div class="bg-gray-800 rounded-lg p-3 hover:bg-gray-750 transition-colors">
-                                <div class="text-xs text-gray-400 mb-2">Timing Correlation</div>
-                                <div class="flex items-center">
-                                    <span id="timingConfidence" class="text-sm font-bold text-red-400 min-w-[40px]">0%</span>
-                                    <div class="flex-1 ml-3 bg-gray-700 rounded-full h-2">
-                                        <div id="timingBar" class="h-2 bg-red-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800 rounded-lg p-3 hover:bg-gray-750 transition-colors">
-                                <div class="text-xs text-gray-400 mb-2">Traffic Analysis</div>
-                                <div class="flex items-center">
-                                    <span id="trafficConfidence" class="text-sm font-bold text-yellow-400 min-w-[40px]">0%</span>
-                                    <div class="flex-1 ml-3 bg-gray-700 rounded-full h-2">
-                                        <div id="trafficBar" class="h-2 bg-yellow-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800 rounded-lg p-3 hover:bg-gray-750 transition-colors">
-                                <div class="text-xs text-gray-400 mb-2">Website Fingerprint</div>
-                                <div class="flex items-center">
-                                    <span id="fingerprintConfidence" class="text-sm font-bold text-blue-400 min-w-[40px]">0%</span>
-                                    <div class="flex-1 ml-3 bg-gray-700 rounded-full h-2">
-                                        <div id="fingerprintBar" class="h-2 bg-blue-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800 rounded-lg p-3 hover:bg-gray-750 transition-colors">
-                                <div class="text-xs text-gray-400 mb-2">Overall Confidence</div>
-                                <div class="flex items-center">
-                                    <span id="overallConfidence" class="text-sm font-bold text-green-400 min-w-[40px]">0%</span>
-                                    <div class="flex-1 ml-3 bg-gray-700 rounded-full h-2">
-                                        <div id="overallBar" class="h-2 bg-green-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Correlation Status -->
-                        <div class="text-center py-3 mb-4">
-                            <span class="text-sm text-gray-400">Correlation Strength: </span>
-                            <span id="correlationStrength" class="font-bold text-green-400 text-lg">LOW</span>
-                        </div>
-                        
-                        <div id="worldMap" class="network-viz w-full h-screen bg-slate-950 rounded-xl border-2 border-gray-600 shadow-2xl overflow-hidden">
-                        </div>
+                    </div>
+                    
+                    <div id="correlationResults" class="bg-gray-900 rounded-xl p-6 min-h-[400px] relative">
+                        <div id="map"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Secondary Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+            <!-- Controls and Packets -->
+            <div class="grid grid-cols-2 gap-8">
                 <!-- Control Panel -->
-                <div>
-                    <div class="glass-panel rounded-2xl p-6 border-2 border-gray-600 hover:border-warning-amber transition-all duration-300 h-full">
-                        <div class="mb-6">
-                            <h3 class="cyber-font text-lg font-bold text-warning-amber mb-2">System Controls</h3>
-                            <p class="text-xs text-gray-400">Manage capture and analysis operations</p>
-                        </div>
-                        <div class="space-y-2">
-                            <!-- Mode Toggle -->
-                            <div class="flex items-center justify-between bg-gray-800 rounded p-2 mb-2">
-                                <span class="text-xs text-gray-300">Mode:</span>
-                                <div class="flex items-center space-x-2">
-                                    <button id="modeToggleBtn" class="px-3 py-1 rounded text-xs font-bold bg-matrix-green text-black hover:bg-opacity-80">
-                                        🔴 LIVE
-                                    </button>
-                                    <span id="modeIndicator" class="text-xs text-matrix-green">Live Capture</span>
-                                </div>
-                            </div>
-                            
-                            <button id="torConnect" class="w-full bg-cyber-blue text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
-                                Connect TOR
+                <div class="glass-panel rounded-2xl p-6 border-2 border-gray-600 hover:border-warning-amber transition-all duration-300">
+                    <div class="mb-6">
+                        <h3 class="cyber-font text-lg font-bold text-warning-amber mb-2">System Controls</h3>
+                        <p class="text-xs text-gray-400">Manage capture and analysis operations</p>
+                    </div>
+                    <div class="space-y-2">
+                        <button id="torConnect" class="w-full bg-cyber-blue text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                            Connect TOR
+                        </button>
+                        <div class="flex space-x-2">
+                            <button id="startSniffer" class="flex-1 bg-matrix-green text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                                Start Capture
                             </button>
-                            <div class="flex space-x-2">
-                                <button id="startSniffer" class="flex-1 bg-matrix-green text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
-                                    Start Capture
-                                </button>
-                                <button id="stopSniffer" class="flex-1 bg-critical-red text-white font-bold py-2 rounded text-sm hover:bg-opacity-80">
-                                    Stop
-                                </button>
-                            </div>
-                            
-                            <!-- PCAP Upload Button -->
-                            <button id="uploadPcapBtn" class="w-full bg-purple-600 text-white font-bold py-2 rounded text-sm hover:bg-opacity-80 flex items-center justify-center space-x-2">
-                                <span>📁</span>
-                                <span>Analyze PCAP File</span>
-                            </button>
-                            <button id="startGeoTracking" class="w-full bg-matrix-green text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
-                                Start Geo Tracking
+                            <button id="stopSniffer" class="flex-1 bg-critical-red text-white font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                                Stop
                             </button>
                         </div>
+                        <button id="startGeoTracking" class="w-full bg-matrix-green text-black font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                            Start Geo Tracking
+                        </button>
+                        <button id="runCorrelation" class="w-full bg-red-500 text-white font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                            Run TOR Correlation
+                        </button>
+                        <button id="generateReport" class="w-full bg-orange-600 text-white font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                            Generate Report
+                        </button>
+                        <button id="deepAnalysis" class="w-full bg-indigo-600 text-white font-bold py-2 rounded text-sm hover:bg-opacity-80">
+                            Deep Analysis
+                        </button>
                     </div>
                 </div>
 
                 <!-- Live Packets -->
-                <div>
-                    <div class="glass-panel rounded-2xl p-6 border-2 border-gray-600 hover:border-cyber-blue transition-all duration-300 h-full">
-                        <div class="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-1">Live Packets</h3>
-                                <p class="text-xs text-gray-400">Real-time packet monitoring and analysis</p>
-                            </div>
-                            <div class="flex space-x-1">
-                                <select id="protocolFilter" class="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-500">
-                                    <option value="all" class="bg-gray-700 text-white">All Protocols</option>
-                                    <option value="TCP" class="bg-gray-700 text-white">TCP</option>
-                                    <option value="UDP" class="bg-gray-700 text-white">UDP</option>
-                                    <option value="HTTP" class="bg-gray-700 text-white">HTTP</option>
-                                    <option value="HTTPS" class="bg-gray-700 text-white">HTTPS</option>
-                                </select>
-                                <select id="torFilter" class="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-500">
-                                    <option value="all" class="bg-gray-700 text-white">All Traffic</option>
-                                    <option value="tor" class="bg-gray-700 text-white">TOR Only</option>
-                                    <option value="non-tor" class="bg-gray-700 text-white">Non-TOR</option>
-                                </select>
-                                <button id="clearPackets" class="bg-critical-red text-white text-xs px-2 py-1 rounded hover:bg-opacity-80">Clear</button>
-                            </div>
+                <div class="glass-panel rounded-2xl p-6 border-2 border-gray-600 hover:border-cyber-blue transition-all duration-300">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-1">Live Packets</h3>
+                            <p class="text-xs text-gray-400">Real-time packet monitoring and analysis</p>
                         </div>
-                        <div class="mb-2">
-                            <input id="packetSearch" type="text" placeholder="Filter by IP, port, or protocol..." 
-                                   class="w-full bg-steel-gray text-white text-xs px-2 py-1 rounded border border-gray-600 placeholder-gray-400">
-                        </div>
-                        <div id="livePackets" class="space-y-1 max-h-64 overflow-y-auto text-xs mono-font">
-                            <div class="text-gray-400 text-center py-4">No packets captured</div>
+                        <div class="flex space-x-1">
+                            <select id="protocolFilter" class="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-500">
+                                <option value="all">All Protocols</option>
+                                <option value="TCP">TCP</option>
+                                <option value="UDP">UDP</option>
+                                <option value="HTTP">HTTP</option>
+                                <option value="HTTPS">HTTPS</option>
+                            </select>
+                            <select id="torFilter" class="bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-500">
+                                <option value="all">All Traffic</option>
+                                <option value="tor">TOR Only</option>
+                                <option value="non-tor">Non-TOR</option>
+                            </select>
+                            <button id="clearPackets" class="bg-critical-red text-white text-xs px-2 py-1 rounded hover:bg-opacity-80">Clear</button>
                         </div>
                     </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div>
-                    <div class="glass-panel rounded-2xl p-6 border-2 border-gray-600 hover:border-matrix-green transition-all duration-300 h-full">
-                        <div class="mb-6">
-                            <h3 class="cyber-font text-lg font-bold text-matrix-green mb-2">Quick Actions</h3>
-                            <p class="text-xs text-gray-400">Rapid access to key functions</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="startEnhancedMonitoring()" class="bg-gradient-to-r from-matrix-green to-green-500 text-black font-bold py-3 rounded-xl text-xs hover:from-green-500 hover:to-green-600 transition-all transform hover:scale-105 shadow-lg">
-                                📊 Enhanced Monitor
-                            </button>
-                            <button onclick="generateEnhancedReport()" class="bg-gradient-to-r from-warning-amber to-orange-500 text-black font-bold py-3 rounded-xl text-xs hover:from-orange-500 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg">
-                                📋 Generate Report
-                            </button>
-                            <button onclick="window.location.href='analysis.html'" class="bg-gradient-to-r from-steel-gray to-gray-600 text-white font-bold py-3 rounded-xl text-xs hover:from-gray-600 hover:to-gray-700 transition-all transform hover:scale-105 shadow-lg">
-                                🔍 Deep Analysis
-                            </button>
-                            <button onclick="exportEnhancedData()" class="bg-gradient-to-r from-cyber-blue to-blue-500 text-black font-bold py-3 rounded-xl text-xs hover:from-blue-500 hover:to-blue-600 transition-all transform hover:scale-105 shadow-lg">
-                                💾 Export Data
-                            </button>
-                            <button onclick="toggleGeoSpoofing()" class="bg-gradient-to-r from-critical-red to-red-600 text-white font-bold py-3 rounded-xl text-xs hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 shadow-lg">
-                                🌐 IP Spoofing
-                            </button>
-                            <button onclick="showNetworkStats()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-3 rounded-xl text-xs hover:from-purple-700 hover:to-purple-800 transition-all transform hover:scale-105 shadow-lg">
-                                📈 Network Stats
-                            </button>
-                        </div>
+                    <div class="mb-2">
+                        <input id="packetSearch" type="text" placeholder="Filter: ip.src==192.168.1.1 or tcp.port==443..." 
+                               class="w-full bg-steel-gray text-white text-xs px-2 py-1 rounded border border-gray-600 placeholder-gray-400">
+                    </div>
+                    <div id="livePackets" class="space-y-1 max-h-64 overflow-y-auto text-xs mono-font">
+                        <div class="text-gray-400 text-center py-4">No packets captured</div>
                     </div>
                 </div>
             </div>
-        </div>
+            
+            <!-- Results Panel -->
+            <div class="glass-panel rounded-2xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-purple-400 mb-4">Analysis Results</h3>
+                <div id="resultsPanel" class="text-sm">
+                    <div class="text-gray-400 text-center py-4">Run analysis to see results</div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="mt-16 py-8 border-t border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <p class="text-gray-400 text-sm mono-font">
-                    TOR Unveil Enhanced v2.0 | 2025 | Created by MOHAMMED ZUHAIB
-                </p>
-                <p class="text-gray-500 text-xs mt-2">
-                    Enhanced Features: Real-time Packet Sniffer • TOR ControlPort Capture • Advanced PCAP Analysis • Comprehensive Reports
-                </p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="backend-checker.js"></script>
-    <script src="geo-positioning.js"></script>
-    <script src="force-tor-geo-init.js"></script>
-    <script src="main.js"></script>
-    <script src="live-data-manager.js"></script>
-    <script src="tor-visualization.js"></script>
-    <script src="enhanced-topology.js"></script>
-    <script src="init-topology.js"></script>
-    <script src="correlation-dashboard.js"></script>
-    <script src="force-refresh.js"></script>
-    <script src="pcap-upload-modal.js"></script>
-    <script src="geo-tracking-init.js"></script>
-    <script src="stats-updater.js"></script>
-    <script src="fix_dashboard.js"></script>
-    
     <script>
-        // Mode toggle functionality
-        let currentMode = 'live'; // 'live' or 'offline'
-        
-        // Initialize typed.js for status text
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mode toggle
-            const modeToggleBtn = document.getElementById('modeToggleBtn');
-            const modeIndicator = document.getElementById('modeIndicator');
-            
-            if (modeToggleBtn) {
-                modeToggleBtn.addEventListener('click', function() {
-                    currentMode = currentMode === 'live' ? 'offline' : 'live';
-                    
-                    if (currentMode === 'live') {
-                        modeToggleBtn.textContent = '🔴 LIVE';
-                        modeToggleBtn.classList.remove('bg-purple-600');
-                        modeToggleBtn.classList.add('bg-matrix-green');
-                        modeIndicator.textContent = 'Live Capture';
-                        modeIndicator.classList.remove('text-purple-400');
-                        modeIndicator.classList.add('text-matrix-green');
-                    } else {
-                        modeToggleBtn.textContent = '📁 OFFLINE';
-                        modeToggleBtn.classList.remove('bg-matrix-green');
-                        modeToggleBtn.classList.add('bg-purple-600');
-                        modeIndicator.textContent = 'Offline Analysis';
-                        modeIndicator.classList.remove('text-matrix-green');
-                        modeIndicator.classList.add('text-purple-400');
-                    }
-                    
-                    showNotification(`Switched to ${currentMode.toUpperCase()} mode`, 'info');
-                });
-            }
-            
-            // PCAP upload button
-            const uploadPcapBtn = document.getElementById('uploadPcapBtn');
-            if (uploadPcapBtn) {
-                uploadPcapBtn.addEventListener('click', function() {
-                    if (window.pcapUploadModal) {
-                        pcapUploadModal.open();
-                    }
-                });
-            }
-            
-            if (document.querySelector('#typed-status')) {
-                new Typed('#typed-status', {
-                    strings: [
-                        'Analyzing TOR Network Traffic...',
-                        'Monitoring Anonymous Communications...',
-                        'Detecting Suspicious Activities...',
-                        'Enhanced Packet Inspection Active...'
-                    ],
-                    typeSpeed: 50,
-                    backSpeed: 30,
-                    backDelay: 2000,
-                    loop: true
-                });
-            }
-        });
+        let map;
+        let geoTrackingActive = false;
+        let captureActive = false;
+        let allPackets = [];
 
-        // Simple working status updater
-        async function updateSystemStatus() {
+        // Initialize map
+        function initMap() {
+            // Remove existing map if it exists
+            if (map) {
+                map.remove();
+                map = null;
+            }
+            
+            // Clear the map container completely
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.innerHTML = '';
+                mapContainer._leaflet_id = null;
+            }
+            
+            // Create new map instance with bounds
+            map = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                minZoom: 1,
+                maxZoom: 10,
+                worldCopyJump: false,
+                maxBounds: [[-90, -180], [90, 180]],
+                maxBoundsViscosity: 1.0
+            });
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 10,
+                noWrap: true,
+                bounds: [[-90, -180], [90, 180]]
+            }).addTo(map);
+
+            // Dark theme styling
+            const existingStyle = document.getElementById('mapStyle');
+            if (existingStyle) {
+                existingStyle.remove();
+            }
+            
+            const style = document.createElement('style');
+            style.id = 'mapStyle';
+            style.textContent = `
+                .leaflet-tile {
+                    filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.2);
+                }
+                .leaflet-control-container {
+                    filter: invert(1) hue-rotate(180deg);
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Force map to resize after a short delay
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 200);
+        }
+
+        // Check backend status
+        async function checkBackendStatus() {
             try {
-                const health = await fetchJsonSafe('http://localhost:5000/api/health?ts=' + Date.now());
+                const response = await fetch('http://localhost:5000/api/health');
+                const data = await response.json();
                 
-                const enhancedStatusEl = document.getElementById('enhancedStatus');
-                if (enhancedStatusEl) {
-                    enhancedStatusEl.textContent = 'System Ready';
-                    enhancedStatusEl.className = 'text-matrix-green font-bold';
+                document.getElementById('backendStatus').textContent = 'Backend Online';
+                document.getElementById('backendStatus').className = 'text-xs px-2 py-1 rounded bg-green-900 text-green-300';
+                
+                const backendIndicator = document.getElementById('backendIndicator');
+                const backendText = document.getElementById('backendText');
+                if (backendIndicator) backendIndicator.className = 'status-indicator bg-matrix-green';
+                if (backendText) {
+                    backendText.textContent = 'BACKEND ONLINE';
+                    backendText.className = 'text-matrix-green text-xs font-medium';
                 }
-                const networkStatusEl = document.getElementById('networkStatus');
-                if (networkStatusEl) networkStatusEl.textContent = 'Connected';
-                const torStatusEl = document.getElementById('torStatus');
-                if (torStatusEl) torStatusEl.textContent = health.tor_connected ? 'Connected' : 'Disconnected';
-                const snifferStatusEl = document.getElementById('snifferStatus');
-                if (snifferStatusEl) snifferStatusEl.textContent = health.sniffer_active ? 'Running' : 'Stopped';
                 
-                const status = await fetchJsonSafe('http://localhost:5000/api/status?ts=' + Date.now());
-                
-                const packetsCaptureEl = document.getElementById('packetsCapture');
-                if (packetsCaptureEl) packetsCaptureEl.textContent = status.packets_captured;
-                const torTrafficEl = document.getElementById('torTraffic');
-                if (torTrafficEl) torTrafficEl.textContent = status.tor_packets;
-                const threatLevelEl = document.getElementById('threatLevel');
-                if (threatLevelEl) threatLevelEl.textContent = status.sniffer_active ? 'ACTIVE' : 'STANDBY';
-                
-            } catch (e) {
-                console.error('Status update failed:', e);
-                const enhancedStatusEl = document.getElementById('enhancedStatus');
-                if (enhancedStatusEl) {
-                    enhancedStatusEl.textContent = 'Offline';
-                    enhancedStatusEl.className = 'text-critical-red font-bold';
-                }
-                const networkStatusEl = document.getElementById('networkStatus');
-                if (networkStatusEl) networkStatusEl.textContent = 'Failed';
+                return true;
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = 'Backend Offline';
+                document.getElementById('backendStatus').className = 'text-xs px-2 py-1 rounded bg-red-900 text-red-300';
+                return false;
             }
         }
-        
-        // TOR Control Functions
-        async function connectTOR() {
+
+        // Update packets display
+        async function updatePackets() {
             try {
-                document.getElementById('torConnect').textContent = 'Connecting...';
-                document.getElementById('torConnect').disabled = true;
+                const response = await fetch('http://localhost:5000/api/capture/packets?limit=20');
+                const packets = await response.json();
                 
+                if (packets && packets.length > 0) {
+                    allPackets = packets;
+                    displayPackets(packets);
+                    updateStats(packets);
+                } else {
+                    document.getElementById('livePackets').innerHTML = '<div class="text-yellow-400 text-center py-4">Start packet capture to see live packets</div>';
+                }
+            } catch (error) {
+                console.error('Packet update failed:', error);
+                document.getElementById('livePackets').innerHTML = '<div class="text-red-400 text-center py-4">Backend connection failed</div>';
+            }
+        }
+
+        function displayPackets(packets) {
+            const packetsDiv = document.getElementById('livePackets');
+            if (!packetsDiv) return;
+            
+            // Apply filters
+            const protocolFilter = document.getElementById('protocolFilter')?.value || 'all';
+            const torFilter = document.getElementById('torFilter')?.value || 'all';
+            const searchFilter = document.getElementById('packetSearch')?.value || '';
+            
+            let filteredPackets = packets;
+            
+            // Protocol filter
+            if (protocolFilter !== 'all') {
+                filteredPackets = filteredPackets.filter(p => p.protocol === protocolFilter);
+            }
+            
+            // TOR filter
+            if (torFilter === 'tor') {
+                filteredPackets = filteredPackets.filter(p => p.is_tor);
+            } else if (torFilter === 'non-tor') {
+                filteredPackets = filteredPackets.filter(p => !p.is_tor);
+            }
+            
+            // Search filter
+            if (searchFilter) {
+                filteredPackets = filteredPackets.filter(p => 
+                    p.src_ip.includes(searchFilter) || 
+                    p.dst_ip.includes(searchFilter) ||
+                    p.protocol.toLowerCase().includes(searchFilter.toLowerCase())
+                );
+            }
+            
+            const recentPackets = filteredPackets.slice(-10).reverse();
+            
+            if (recentPackets.length === 0) {
+                packetsDiv.innerHTML = '<div class="text-yellow-400 text-center py-4">No packets match filters</div>';
+                return;
+            }
+            
+            packetsDiv.innerHTML = recentPackets.map(p => `
+                <div class="bg-gray-700 rounded p-2 mb-1 cursor-pointer hover:bg-gray-600 transition-colors ${p.is_tor ? 'border-l-2 border-green-400' : 'border-l-2 border-blue-400'}">
+                    <div class="flex justify-between text-xs">
+                        <span class="${p.is_tor ? 'text-green-400 font-bold' : 'text-blue-400 font-bold'}">${p.protocol}</span>
+                        <span class="text-gray-400">${p.length || p.size || 0}B</span>
+                        <span class="text-gray-500">${new Date(p.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="text-xs text-gray-300">${p.src_ip}:${p.src_port || ''} → ${p.dst_ip}:${p.dst_port || ''}</div>
+                    ${p.is_tor ? '<div class="text-xs text-green-400 font-bold">🔴 TOR TRAFFIC</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateStats(packets) {
+            document.getElementById('packetsCount').textContent = packets.length;
+            document.getElementById('torRoutes').textContent = packets.filter(p => p.is_tor).length;
+            document.getElementById('activeRoutes').textContent = new Set(packets.map(p => p.dst_ip)).size;
+            document.getElementById('countriesCount').textContent = Math.min(Math.floor(packets.length / 10) + 1, 15);
+            document.getElementById('liveTimestamp').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Start packet capture
+        async function startCapture() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/start', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.status === 'started') {
+                    captureActive = true;
+                    document.getElementById('startSniffer').textContent = 'Running';
+                    document.getElementById('startSniffer').className = 'flex-1 bg-green-600 text-white font-bold py-2 rounded text-sm';
+                    showNotification('Packet capture started', 'success');
+                }
+            } catch (error) {
+                showNotification('Failed to start capture: ' + error.message, 'error');
+            }
+        }
+
+        // Stop packet capture
+        async function stopCapture() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/stop', { method: 'POST' });
+                const result = await response.json();
+                
+                captureActive = false;
+                document.getElementById('startSniffer').textContent = 'Start Capture';
+                document.getElementById('startSniffer').className = 'flex-1 bg-matrix-green text-black font-bold py-2 rounded text-sm';
+                showNotification('Packet capture stopped', 'info');
+            } catch (error) {
+                showNotification('Failed to stop capture: ' + error.message, 'error');
+            }
+        }
+
+        // Start geo tracking
+        async function startGeoTracking() {
+            if (geoTrackingActive) {
+                geoTrackingActive = false;
+                document.getElementById('startGeoTracking').textContent = 'Start Geo Tracking';
+                document.getElementById('startGeoTracking').className = 'w-full bg-matrix-green text-black font-bold py-2 rounded text-sm';
+                showNotification('Geo tracking stopped', 'info');
+                return;
+            }
+
+            geoTrackingActive = true;
+            document.getElementById('startGeoTracking').textContent = 'Stop Geo Tracking';
+            document.getElementById('startGeoTracking').className = 'w-full bg-critical-red text-white font-bold py-2 rounded text-sm';
+            showNotification('Geo tracking started', 'success');
+
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            updateGeoVisualization();
+        }
+
+        // Update geo visualization
+        async function updateGeoVisualization() {
+            if (!geoTrackingActive) return;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/geo/packets');
+                const geoPackets = await response.json();
+
+                if (geoPackets && geoPackets.length > 0) {
+                    // Source location (India)
+                    const sourceMarker = L.marker([28.6139, 77.2090])
+                        .addTo(map)
+                        .bindPopup('🇮🇳 Source: New Delhi, India');
+
+                    geoPackets.forEach(packet => {
+                        const loc = packet.location;
+                        if (loc.lat && loc.lng) {
+                            // Destination marker
+                            const marker = L.marker([loc.lat, loc.lng])
+                                .addTo(map)
+                                .bindPopup(`${loc.flag || '🌍'} ${loc.city}, ${loc.country}<br/>
+                                           IP: ${packet.dst_ip}<br/>
+                                           Protocol: ${packet.protocol}<br/>
+                                           TOR: ${packet.is_tor ? 'Yes' : 'No'}`);
+
+                            // Connection line
+                            const line = L.polyline([
+                                [28.6139, 77.2090],
+                                [loc.lat, loc.lng]
+                            ], {
+                                color: packet.is_tor ? '#00ff88' : '#00d4ff',
+                                weight: 2,
+                                opacity: 0.7
+                            }).addTo(map);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Geo visualization failed:', error);
+            }
+
+            if (geoTrackingActive) {
+                setTimeout(updateGeoVisualization, 5000);
+            }
+        }
+
+        // Run TOR correlation
+        async function runCorrelation() {
+            const button = document.getElementById('runCorrelation');
+            const resultsDiv = document.getElementById('resultsPanel');
+            
+            button.textContent = 'Analyzing...';
+            button.disabled = true;
+            resultsDiv.innerHTML = '<div class="text-yellow-400">Running correlation analysis...</div>';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/tor/correlate', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'success' && result.results) {
+                    const stats = result.results.statistics || {};
+                    const correlations = result.results.tor_correlations || result.results.connections || [];
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-green-400 font-bold mb-2">Detection Summary</div>
+                                <div class="text-xs space-y-1">
+                                    <div>TOR Packets: <span class="text-white">${stats.tor_packets_found || stats.total_tor_packets || 0}</span></div>
+                                    <div>Circuits: <span class="text-white">${stats.active_circuits || stats.total_circuits || 0}</span></div>
+                                    <div>Entry Nodes: <span class="text-white">${stats.entry_nodes_detected || stats.unique_entry_nodes || 0}</span></div>
+                                    <div>Exit Nodes: <span class="text-white">${stats.exit_nodes_detected || stats.unique_exit_nodes || 0}</span></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-blue-400 font-bold mb-2">Connections Found</div>
+                                <div class="text-xs space-y-1 max-h-20 overflow-y-auto">
+                                    ${correlations.slice(0, 3).map(conn => `
+                                        <div class="border-l-2 border-green-400 pl-2">
+                                            ${conn.user_ip || conn.src_ip} → ${conn.tor_node_ip || conn.dst_ip}<br/>
+                                            <span class="text-green-400">Confidence: ${conn.tor_confidence}%</span><br/>
+                                            <span class="text-gray-400">${conn.node_type || 'TOR Node'} (${conn.country || 'Unknown'})</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    showNotification('TOR correlation analysis complete', 'success');
+                } else {
+                    resultsDiv.innerHTML = `<div class="text-red-400">Analysis failed: ${result.message || 'Unknown error'}</div>`;
+                    showNotification('Correlation analysis failed', 'error');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+                showNotification('Correlation analysis failed', 'error');
+            } finally {
+                button.textContent = 'Run TOR Correlation';
+                button.disabled = false;
+            }
+        }
+
+        // Generate report
+        async function generateReport() {
+            const button = document.getElementById('generateReport');
+            const resultsDiv = document.getElementById('resultsPanel');
+            
+            button.textContent = 'Generating...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/reports/generate', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    resultsDiv.innerHTML = `
+                        <div class="bg-green-900 bg-opacity-50 p-4 rounded-lg border border-green-500">
+                            <div class="text-green-400 font-bold mb-2">✅ Report Generated Successfully</div>
+                            <div class="text-gray-300">Report ID: ${result.report_id}</div>
+                            <div class="text-sm text-gray-400 mt-2">
+                                Files: ${Object.values(result.files).join(', ')}
+                            </div>
+                        </div>
+                    `;
+                    showNotification('Forensic report generated successfully', 'success');
+                } else {
+                    throw new Error(result.message || 'Report generation failed');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="text-red-400">Report generation failed: ${error.message}</div>`;
+                showNotification('Report generation failed', 'error');
+            } finally {
+                button.textContent = 'Generate Report';
+                button.disabled = false;
+            }
+        }
+
+        // Deep analysis
+        async function deepAnalysis() {
+            const button = document.getElementById('deepAnalysis');
+            const resultsDiv = document.getElementById('resultsPanel');
+            
+            button.textContent = 'Analyzing...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/analysis/deep', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const analysis = result.analysis;
+                    resultsDiv.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-cyan-400 font-bold mb-2">Packet Analysis</div>
+                                <div class="text-xs">Total Analyzed: ${analysis.packet_analysis.total_analyzed}</div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-orange-400 font-bold mb-2">Security Analysis</div>
+                                <div class="text-xs">
+                                    Suspicious Ports: ${analysis.security_analysis.suspicious_ports.length}<br/>
+                                    Anomalies: ${analysis.security_analysis.anomalies.length}
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-purple-400 font-bold mb-2">Performance Metrics</div>
+                                <div class="text-xs">
+                                    Avg Packet Size: ${Math.round(analysis.performance_metrics.avg_packet_size)} bytes<br/>
+                                    Bandwidth: ${analysis.performance_metrics.bandwidth_utilization}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    showNotification('Deep analysis complete', 'success');
+                } else {
+                    throw new Error(result.message || 'Analysis failed');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="text-red-400">Deep analysis failed: ${error.message}</div>`;
+                showNotification('Deep analysis failed', 'error');
+            } finally {
+                button.textContent = 'Deep Analysis';
+                button.disabled = false;
+            }
+        }
+
+        // Connect TOR
+        async function connectTOR() {
+            const button = document.getElementById('torConnect');
+            button.textContent = 'Connecting...';
+            button.disabled = true;
+
+            try {
                 const response = await fetch('http://localhost:5000/api/tor/connect');
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    showNotification('TOR network enabled successfully!', 'success');
-                    document.getElementById('torStatus').textContent = 'Connected';
-                    document.getElementById('torConnect').textContent = 'Connected';
+                    button.textContent = 'TOR Connected';
+                    button.className = 'w-full bg-matrix-green text-black font-bold py-2 rounded text-sm';
+                    
+                    const torIndicator = document.getElementById('torIndicator');
+                    const torText = document.getElementById('torText');
+                    if (torIndicator) torIndicator.className = 'status-indicator bg-matrix-green';
+                    if (torText) {
+                        torText.textContent = 'TOR CONNECTED';
+                        torText.className = 'text-matrix-green text-xs font-medium';
+                    }
+                    
+                    showNotification('TOR connection established', 'success');
                 } else {
-                    showNotification(`TOR connection failed: ${result.message}`, 'error');
-                    document.getElementById('torStatus').textContent = 'Failed';
-                    document.getElementById('torConnect').textContent = 'Retry Connect';
-                    document.getElementById('torConnect').disabled = false;
+                    button.textContent = 'TOR Unavailable';
+                    button.className = 'w-full bg-gray-600 text-gray-300 font-bold py-2 rounded text-sm';
+                    showNotification('TOR not available', 'warning');
                 }
             } catch (error) {
-                showNotification('Backend connection failed', 'error');
-                document.getElementById('torConnect').textContent = 'Connect TOR';
-                document.getElementById('torConnect').disabled = false;
+                button.textContent = 'Connect TOR';
+                button.disabled = false;
+                showNotification('TOR connection failed', 'error');
             }
         }
-        
-        // Packet Sniffer Functions
-        async function startPacketSniffer() {
-            try {
-                const response = await fetch('http://localhost:5000/api/sniffer/start');
-                const result = await response.json();
-                showNotification('Packet capture started', 'success');
-            } catch (error) {
-                showNotification('Failed to start', 'error');
-            }
-        }
-        
-        async function stopPacketSniffer() {
-            try {
-                const response = await fetch('http://localhost:5000/api/sniffer/stop');
-                const result = await response.json();
-                
-                if (result.pcap_file) {
-                    showNotification(`Capture stopped. PCAP saved: ${result.pcap_file.split('/').pop()}`, 'success');
-                } else {
-                    showNotification('Packet capture stopped', 'success');
-                }
-                
-                // Show save dialog
-                showSaveDialog();
-                
-            } catch (error) {
-                showNotification('Failed to stop', 'error');
-            }
-        }
-        
-        function showSaveDialog() {
-            const totalPackets = allPackets.length;
-            const torPackets = allPackets.filter(p => p.is_tor).length;
-            
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-            modal.innerHTML = `
-                <div class="glass-panel rounded-lg p-6 max-w-md w-full mx-4">
-                    <div class="text-center mb-4">
-                        <h3 class="cyber-font text-lg font-bold text-cyber-blue mb-2">Capture Stopped</h3>
-                        <div class="space-y-1 text-sm mono-font">
-                            <div>Total Packets: <span class="text-cyber-blue font-bold">${totalPackets}</span></div>
-                            <div>TOR Packets: <span class="text-matrix-green font-bold">${torPackets}</span></div>
-                            <div>Non-TOR Packets: <span class="text-gray-400">${totalPackets - torPackets}</span></div>
-                        </div>
-                    </div>
-                    <div class="text-center mb-4">
-                        <p class="text-gray-300 text-sm">Do you want to save the captured data?</p>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button onclick="saveCaptureData(); this.parentElement.parentElement.parentElement.remove();" 
-                                class="flex-1 bg-matrix-green text-black font-bold py-2 rounded hover:bg-opacity-80">
-                            Save PCAP
-                        </button>
-                        <button onclick="this.parentElement.parentElement.parentElement.remove(); showNotification('Capture data discarded', 'info');" 
-                                class="flex-1 bg-critical-red text-white font-bold py-2 rounded hover:bg-opacity-80">
-                            Discard
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-        
-        async function saveCaptureData() {
-            const totalPackets = allPackets.length;
-            const torPackets = allPackets.filter(p => p.is_tor).length;
-            
-            try {
-                const pcapResponse = await fetch('http://localhost:5000/api/sniffer/export/pcap');
-                
-                if (pcapResponse.ok) {
-                    const blob = await pcapResponse.blob();
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                    link.download = `tor_capture_${timestamp}.pcap`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    showNotification(`✓ Saved ${totalPackets} packets (${torPackets} TOR) as PCAP file`, 'success');
-                } else {
-                    throw new Error('PCAP export failed');
-                }
-            } catch (error) {
-                console.error('Save error:', error);
-                showNotification('Failed to save PCAP file. Ensure capture is running.', 'error');
-            }
-        }
-        
-        // Notification system
+
+        // Show notification
         function showNotification(message, type = 'info') {
             const colors = {
                 success: 'bg-green-900 border-green-500 text-green-200',
@@ -770,258 +773,48 @@
                 }
             }, 4000);
         }
-        
-        // Safe JSON fetch helper (strips stray headers accidentally in body)
-        async function fetchJsonSafe(url, options) {
-            const res = await fetch(url, options);
-            const text = await res.text();
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                const iObj = text.indexOf('{');
-                const iArr = text.indexOf('[');
-                const i = (iObj === -1 ? Infinity : iObj) < (iArr === -1 ? Infinity : iArr) ? iObj : iArr;
-                if (isFinite(i)) {
-                    try { return JSON.parse(text.slice(i)); } catch {}
-                }
-                throw e;
-            }
-        }
 
-        // Live packet viewing with real-time updates
-        let lastPacketCount = 0;
-        let packetBuffer = [];
-        
-        // Track last total count reported by backend to detect new packets
-        let lastTotalCount = 0;
-
-        let allPackets = [];
-        let filteredPackets = [];
-        
-        async function viewLivePackets() {
-            try {
-                const response = await fetch('http://localhost:5000/api/packets');
-                const result = await response.json();
-                
-                if (result.packets && result.packets.length > 0) {
-                    allPackets = result.packets;
-                    applyPacketFilters();
-                    document.getElementById('packetsCapture').textContent = result.total_count || result.packets.length;
-                } else {
-                    const packetsDiv = document.getElementById('livePackets');
-                    packetsDiv.innerHTML = '<div class="text-gray-400 text-center py-4">Start capture to see packets</div>';
-                }
-            } catch (error) {
-                const packetsDiv = document.getElementById('livePackets');
-                packetsDiv.innerHTML = '<div class="text-red-400 text-center py-4">Backend offline</div>';
-            }
-        }
-        
-        function applyPacketFilters() {
-            const protocolFilter = document.getElementById('protocolFilter').value;
-            const torFilter = document.getElementById('torFilter').value;
-            const searchFilter = document.getElementById('packetSearch').value.toLowerCase();
-            
-            filteredPackets = allPackets.filter(packet => {
-                const matchesProtocol = protocolFilter === 'all' || packet.protocol === protocolFilter;
-                const matchesTor = torFilter === 'all' || 
-                    (torFilter === 'tor' && packet.is_tor) ||
-                    (torFilter === 'non-tor' && !packet.is_tor);
-                const matchesSearch = !searchFilter || 
-                    packet.src_ip.toLowerCase().includes(searchFilter) ||
-                    packet.dst_ip.toLowerCase().includes(searchFilter) ||
-                    packet.protocol.toLowerCase().includes(searchFilter) ||
-                    (packet.src_port && packet.src_port.toString().includes(searchFilter)) ||
-                    (packet.dst_port && packet.dst_port.toString().includes(searchFilter));
-                
-                return matchesProtocol && matchesTor && matchesSearch;
-            });
-            
-            displayPackets();
-        }
-        
-        function displayPackets() {
-            const packetsDiv = document.getElementById('livePackets');
-            packetsDiv.innerHTML = '';
-            
-            if (filteredPackets.length === 0) {
-                packetsDiv.innerHTML = '<div class="text-gray-400 text-center py-4">No packets match filters</div>';
-                return;
-            }
-            
-            filteredPackets.slice(-20).reverse().forEach((packet, index) => {
-                const packetEl = document.createElement('div');
-                packetEl.className = `packet-item bg-steel-gray rounded p-2 mb-1 cursor-pointer hover:bg-gray-600 transition-colors ${packet.is_tor ? 'border-l-2 border-matrix-green' : 'border-l-2 border-cyber-blue'}`;
-                packetEl.onclick = () => showPacketDetails(packet);
-                
-                const srcPort = packet.src_port ? `:${packet.src_port}` : '';
-                const dstPort = packet.dst_port ? `:${packet.dst_port}` : '';
-                const flags = packet.flags ? ` [${packet.flags}]` : '';
-                const length = packet.length || packet.size || 0;
-                
-                packetEl.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div class="flex-1">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="${packet.is_tor ? 'text-matrix-green font-bold' : 'text-cyber-blue font-bold'}">
-                                    ${packet.protocol}${flags}
-                                </span>
-                                <span class="text-gray-400">${length}B</span>
-                                <span class="text-gray-500">${new Date(packet.timestamp).toLocaleTimeString()}</span>
-                            </div>
-                            <div class="text-xs text-gray-300">
-                                ${packet.src_ip}${srcPort} → ${packet.dst_ip}${dstPort}
-                            </div>
-                            ${packet.info ? `<div class="text-xs text-yellow-400 mt-1">${packet.info}</div>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-500 ml-2">#${allPackets.indexOf(packet) + 1}</div>
-                    </div>
-                `;
-                packetsDiv.appendChild(packetEl);
-            });
-        }
-        
-        function showPacketDetails(packet) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-            
-            const srcPort = packet.src_port ? `:${packet.src_port}` : '';
-            const dstPort = packet.dst_port ? `:${packet.dst_port}` : '';
-            const flags = packet.flags ? packet.flags : 'None';
-            const ttl = packet.ttl || 'Unknown';
-            const checksum = packet.checksum || 'Unknown';
-            
-            modal.innerHTML = `
-                <div class="glass-panel rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="cyber-font text-lg font-bold text-cyber-blue">Packet Details</h3>
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white text-xl">✕</button>
-                    </div>
-                    <div class="space-y-3 mono-font text-sm">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><strong>Protocol:</strong> <span class="${packet.is_tor ? 'text-matrix-green' : 'text-cyber-blue'}">${packet.protocol}</span></div>
-                            <div><strong>Length:</strong> ${packet.length || packet.size || 0} bytes</div>
-                            <div><strong>Source:</strong> ${packet.src_ip}${srcPort}</div>
-                            <div><strong>Destination:</strong> ${packet.dst_ip}${dstPort}</div>
-                            <div><strong>Timestamp:</strong> ${new Date(packet.timestamp).toLocaleString()}</div>
-                            <div><strong>TOR Traffic:</strong> <span class="${packet.is_tor ? 'text-matrix-green' : 'text-red-400'}">${packet.is_tor ? 'Yes' : 'No'}</span></div>
-                            <div><strong>Flags:</strong> ${flags}</div>
-                            <div><strong>TTL:</strong> ${ttl}</div>
-                            <div><strong>Checksum:</strong> ${checksum}</div>
-                            <div><strong>Window Size:</strong> ${packet.window_size || 'Unknown'}</div>
-                        </div>
-                        ${packet.info ? `<div class="mt-4"><strong>Info:</strong><br/><div class="bg-black bg-opacity-30 p-2 rounded text-yellow-400">${packet.info}</div></div>` : ''}
-                        ${packet.payload ? `<div class="mt-4"><strong>Payload (first 200 chars):</strong><br/><div class="bg-black bg-opacity-30 p-2 rounded text-green-400 font-mono text-xs">${packet.payload.substring(0, 200)}${packet.payload.length > 200 ? '...' : ''}</div></div>` : ''}
-                    </div>
-                    <div class="mt-6 text-center">
-                        <button onclick="this.parentElement.parentElement.remove()" class="bg-cyber-blue text-black font-medium py-2 px-6 rounded hover:bg-opacity-80">Close</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-        
-        // Auto-update packets when sniffer is active
-        let packetUpdateInterval = null;
-        
-        function startPacketUpdates() {
-            if (packetUpdateInterval) return;
-            packetUpdateInterval = setInterval(viewLivePackets, 300); // Very fast updates
-        }
-        
-        function stopPacketUpdates() {
-            if (packetUpdateInterval) {
-                clearInterval(packetUpdateInterval);
-                packetUpdateInterval = null;
-            }
-        }
-        
-        // Initialize event listeners and timers after DOM is ready
+        // Initialize everything
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('torConnect')?.addEventListener('click', connectTOR);
-            document.getElementById('startSniffer')?.addEventListener('click', startPacketSniffer);
-            document.getElementById('stopSniffer')?.addEventListener('click', stopPacketSniffer);
-            document.getElementById('viewPackets')?.addEventListener('click', viewLivePackets);
-
-            // Packet filter event listeners
-            document.getElementById('protocolFilter')?.addEventListener('change', applyPacketFilters);
-            document.getElementById('torFilter')?.addEventListener('change', applyPacketFilters);
-            document.getElementById('packetSearch')?.addEventListener('input', applyPacketFilters);
+            // Ensure only one map initialization
+            if (!map) {
+                setTimeout(initMap, 100);
+            }
             
-
+            // Event listeners
+            document.getElementById('torConnect').addEventListener('click', connectTOR);
+            document.getElementById('startSniffer').addEventListener('click', startCapture);
+            document.getElementById('stopSniffer').addEventListener('click', stopCapture);
+            document.getElementById('startGeoTracking').addEventListener('click', startGeoTracking);
+            document.getElementById('runCorrelation').addEventListener('click', runCorrelation);
+            document.getElementById('generateReport').addEventListener('click', generateReport);
+            document.getElementById('deepAnalysis').addEventListener('click', deepAnalysis);
+            
+            // Filter event listeners
+            document.getElementById('protocolFilter')?.addEventListener('change', () => {
+                displayPackets(allPackets);
+            });
+            document.getElementById('torFilter')?.addEventListener('change', () => {
+                displayPackets(allPackets);
+            });
+            document.getElementById('packetSearch')?.addEventListener('input', () => {
+                displayPackets(allPackets);
+            });
             document.getElementById('clearPackets')?.addEventListener('click', () => {
                 allPackets = [];
-                filteredPackets = [];
                 document.getElementById('livePackets').innerHTML = '<div class="text-gray-400 text-center py-4">No packets captured</div>';
             });
             
-            // Start periodic updates only after DOM is present
-            startPacketUpdates();
-            setInterval(updateSystemStatus, 2000);
-            setInterval(updateNetworkStats, 5000);
-            setInterval(updateCurrentTime, 1000);
-
+            // Start periodic updates
+            setInterval(checkBackendStatus, 5000);
+            setInterval(updatePackets, 3000);
+            
             // Initial calls
-            updateSystemStatus();
-            updateNetworkStats();
-            updateCurrentTime();
+            checkBackendStatus();
+            updatePackets();
+            
+            console.log('TOR Unveil Dashboard loaded');
         });
-
-        // Enhanced stats updater with simulated data
-        async function updateNetworkStats() {
-            try {
-                // Simulate realistic network statistics
-                const stats = {
-                    bandwidth: (Math.random() * 200 + 700).toFixed(0) + ' Gbps',
-                    circuits: (Math.random() * 2000 + 12000).toFixed(0),
-                    users: (Math.random() * 0.5 + 5.0).toFixed(1) + 'M',
-                    relays: (Math.random() * 500 + 7000).toFixed(0),
-                    threats: Math.floor(Math.random() * 5)
-                };
-
-                // Update UI elements
-                const elements = {
-                    'totalBandwidth': stats.bandwidth,
-                    'activeCircuits': stats.circuits,
-                    'usersOnline': stats.users,
-                    'relaysCount': `${stats.relays} Relays`,
-                    'suspiciousCount': `${stats.threats} Threats`
-                };
-
-                Object.entries(elements).forEach(([id, value]) => {
-                    const element = document.getElementById(id);
-                    if (element) element.textContent = value;
-                });
-                
-            } catch (e) {
-                console.warn('Stats update failed:', e.message);
-            }
-        }
-
-        // Update current time
-        function updateCurrentTime() {
-            const timeEl = document.getElementById('currentTime');
-            if (timeEl) {
-                timeEl.textContent = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-            }
-        }
-
-        
-        // Placeholder functions for buttons
-        function startEnhancedMonitoring() {
-            console.log('Enhanced monitoring started');
-        }
-        
-        function generateEnhancedReport() {
-            console.log('Report generation initiated');
-        }
-        
-        function exportEnhancedData() {
-            console.log('Data export started');
-        }
-        
-
     </script>
 
 </body>

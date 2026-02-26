@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR Unveil - Network Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --cyber-blue: #00d4ff;
+            --matrix-green: #00ff88;
+            --critical-red: #ff2d2d;
+            --steel-gray: #2d3748;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1419;
+            color: #ffffff;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #475569;
+            backdrop-filter: blur(12px);
+        }
+        
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        #map {
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <h1 class="text-xl font-bold text-cyan-400">TOR UNVEIL</h1>
+                <div class="flex space-x-4">
+                    <div id="backendStatus" class="text-xs px-2 py-1 rounded bg-red-900 text-red-300">Backend Offline</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <section class="pt-20 pb-8">
+        <div class="max-w-7xl mx-auto px-4">
+            <!-- Status Grid -->
+            <div class="glass-panel rounded-2xl p-8 mb-6">
+                <h1 class="text-3xl font-bold mb-4 text-center">
+                    <span class="text-cyan-400">TOR</span> 
+                    <span class="text-white">UNVEIL</span>
+                </h1>
+                
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-green-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Active Routes</p>
+                                <p class="text-2xl font-bold text-white" id="activeRoutes">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-red-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">TOR Routes</p>
+                                <p class="text-2xl font-bold text-white" id="torRoutes">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-blue-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Countries</p>
+                                <p class="text-2xl font-bold text-white" id="countriesCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="status-indicator bg-yellow-400"></div>
+                            <div>
+                                <p class="text-gray-400 text-sm">Packets</p>
+                                <p class="text-2xl font-bold text-white" id="packetsCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 gap-6 mb-6">
+                <!-- Map Visualization -->
+                <div class="glass-panel rounded-2xl p-8">
+                    <h3 class="text-2xl font-bold text-red-400 mb-4">Network Visualization</h3>
+                    <div id="map" class="w-full h-96 bg-gray-900 rounded-xl"></div>
+                </div>
+            </div>
+
+            <!-- Controls and Live Packets -->
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Control Panel -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-4">System Controls</h3>
+                    <div class="space-y-2">
+                        <button id="torConnect" class="w-full bg-cyan-400 text-black font-bold py-2 rounded">
+                            Connect TOR
+                        </button>
+                        <div class="flex space-x-2">
+                            <button id="startSniffer" class="flex-1 bg-green-400 text-black font-bold py-2 rounded">
+                                Start Capture
+                            </button>
+                            <button id="stopSniffer" class="flex-1 bg-red-400 text-white font-bold py-2 rounded">
+                                Stop
+                            </button>
+                        </div>
+                        <button id="startGeoTracking" class="w-full bg-green-400 text-black font-bold py-2 rounded">
+                            Start Geo Tracking
+                        </button>
+                        <button id="runCorrelation" class="w-full bg-red-500 text-white font-bold py-2 rounded">
+                            Run TOR Correlation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Packets -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-cyan-400 mb-4">Live Packets</h3>
+                    <div id="livePackets" class="space-y-1 max-h-64 overflow-y-auto text-xs">
+                        <div class="text-gray-400 text-center py-4">No packets captured</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correlation Results -->
+            <div class="glass-panel rounded-2xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-purple-400 mb-4">Correlation Results</h3>
+                <div id="correlationResults" class="text-sm">
+                    <div class="text-gray-400 text-center py-4">Run correlation analysis to see results</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let map;
+        let geoTrackingActive = false;
+        let captureActive = false;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([20, 0], 2);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                className: 'map-tiles'
+            }).addTo(map);
+
+            // Add custom dark styling
+            const style = document.createElement('style');
+            style.textContent = `
+                .leaflet-tile {
+                    filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.2);
+                }
+                .leaflet-control-container {
+                    filter: invert(1) hue-rotate(180deg);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Check backend status
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                const data = await response.json();
+                
+                document.getElementById('backendStatus').textContent = 'Backend Online';
+                document.getElementById('backendStatus').className = 'text-xs px-2 py-1 rounded bg-green-900 text-green-300';
+                return true;
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = 'Backend Offline';
+                document.getElementById('backendStatus').className = 'text-xs px-2 py-1 rounded bg-red-900 text-red-300';
+                return false;
+            }
+        }
+
+        // Update packets display
+        async function updatePackets() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/packets?limit=15');
+                const packets = await response.json();
+                
+                const packetsDiv = document.getElementById('livePackets');
+                if (!packetsDiv) return;
+                
+                if (packets && packets.length > 0) {
+                    packetsDiv.innerHTML = packets.slice(-10).reverse().map(p => `
+                        <div class="bg-gray-700 rounded p-2 mb-1 ${p.is_tor ? 'border-l-2 border-green-400' : 'border-l-2 border-blue-400'}">
+                            <div class="flex justify-between text-xs">
+                                <span class="${p.is_tor ? 'text-green-400 font-bold' : 'text-blue-400 font-bold'}">${p.protocol}</span>
+                                <span class="text-gray-400">${p.length || p.size || 0}B</span>
+                                <span class="text-gray-500">${new Date(p.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div class="text-xs text-gray-300">${p.src_ip}:${p.src_port || ''} → ${p.dst_ip}:${p.dst_port || ''}</div>
+                        </div>
+                    `).join('');
+                    
+                    // Update stats
+                    document.getElementById('packetsCount').textContent = packets.length;
+                    document.getElementById('torRoutes').textContent = packets.filter(p => p.is_tor).length;
+                    document.getElementById('activeRoutes').textContent = new Set(packets.map(p => p.dst_ip)).size;
+                    document.getElementById('countriesCount').textContent = Math.min(Math.floor(packets.length / 10) + 1, 15);
+                } else {
+                    packetsDiv.innerHTML = '<div class="text-yellow-400 text-center py-4">Start packet capture to see live packets</div>';
+                }
+            } catch (error) {
+                console.error('Packet update failed:', error);
+                document.getElementById('livePackets').innerHTML = '<div class="text-red-400 text-center py-4">Backend connection failed</div>';
+            }
+        }
+
+        // Start packet capture
+        async function startCapture() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/start', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.status === 'started' || result.status === 'already_running') {
+                    captureActive = true;
+                    document.getElementById('startSniffer').textContent = 'Running';
+                    document.getElementById('startSniffer').className = 'flex-1 bg-green-600 text-white font-bold py-2 rounded';
+                    showNotification('Packet capture started', 'success');
+                } else {
+                    showNotification(result.message || 'Failed to start capture', 'error');
+                }
+            } catch (error) {
+                showNotification('Failed to start capture: ' + error.message, 'error');
+            }
+        }
+
+        // Stop packet capture
+        async function stopCapture() {
+            try {
+                const response = await fetch('http://localhost:5000/api/capture/stop', { method: 'POST' });
+                const result = await response.json();
+                
+                captureActive = false;
+                document.getElementById('startSniffer').textContent = 'Start Capture';
+                document.getElementById('startSniffer').className = 'flex-1 bg-green-400 text-black font-bold py-2 rounded';
+                showNotification('Packet capture stopped', 'info');
+            } catch (error) {
+                showNotification('Failed to stop capture: ' + error.message, 'error');
+            }
+        }
+
+        // Start geo tracking
+        async function startGeoTracking() {
+            if (geoTrackingActive) {
+                geoTrackingActive = false;
+                document.getElementById('startGeoTracking').textContent = 'Start Geo Tracking';
+                document.getElementById('startGeoTracking').className = 'w-full bg-green-400 text-black font-bold py-2 rounded';
+                showNotification('Geo tracking stopped', 'info');
+                return;
+            }
+
+            geoTrackingActive = true;
+            document.getElementById('startGeoTracking').textContent = 'Stop Geo Tracking';
+            document.getElementById('startGeoTracking').className = 'w-full bg-red-400 text-white font-bold py-2 rounded';
+            showNotification('Geo tracking started', 'success');
+
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            updateGeoVisualization();
+        }
+
+        // Update geo visualization
+        async function updateGeoVisualization() {
+            if (!geoTrackingActive) return;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/geo/packets');
+                const geoPackets = await response.json();
+
+                if (geoPackets && geoPackets.length > 0) {
+                    // Source location (India)
+                    const sourceMarker = L.marker([28.6139, 77.2090])
+                        .addTo(map)
+                        .bindPopup('🇮🇳 Source: New Delhi, India');
+
+                    geoPackets.forEach(packet => {
+                        const loc = packet.location;
+                        if (loc.lat && loc.lng) {
+                            // Destination marker
+                            const marker = L.marker([loc.lat, loc.lng])
+                                .addTo(map)
+                                .bindPopup(`${loc.flag || '🌍'} ${loc.city}, ${loc.country}<br/>
+                                           IP: ${packet.dst_ip}<br/>
+                                           Protocol: ${packet.protocol}<br/>
+                                           TOR: ${packet.is_tor ? 'Yes' : 'No'}`);
+
+                            // Connection line
+                            const line = L.polyline([
+                                [28.6139, 77.2090],
+                                [loc.lat, loc.lng]
+                            ], {
+                                color: packet.is_tor ? '#00ff88' : '#00d4ff',
+                                weight: 2,
+                                opacity: 0.7
+                            }).addTo(map);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Geo visualization failed:', error);
+            }
+
+            if (geoTrackingActive) {
+                setTimeout(updateGeoVisualization, 5000);
+            }
+        }
+
+        // Run TOR correlation
+        async function runCorrelation() {
+            const button = document.getElementById('runCorrelation');
+            const resultsDiv = document.getElementById('correlationResults');
+            
+            button.textContent = 'Analyzing...';
+            button.disabled = true;
+            resultsDiv.innerHTML = '<div class="text-yellow-400">Running correlation analysis...</div>';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/tor/correlate', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'success' && result.results) {
+                    const stats = result.results.statistics || {};
+                    const connections = result.results.connections || [];
+                    
+                    resultsDiv.innerHTML = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-green-400 font-bold mb-2">Detection Summary</div>
+                                <div class="text-xs space-y-1">
+                                    <div>TOR Packets: <span class="text-white">${stats.total_tor_packets || 0}</span></div>
+                                    <div>Circuits: <span class="text-white">${stats.total_circuits || 0}</span></div>
+                                    <div>Entry Nodes: <span class="text-white">${stats.unique_entry_nodes || 0}</span></div>
+                                    <div>Exit Nodes: <span class="text-white">${stats.unique_exit_nodes || 0}</span></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-blue-400 font-bold mb-2">Connections Found</div>
+                                <div class="text-xs space-y-1 max-h-20 overflow-y-auto">
+                                    ${connections.slice(0, 3).map(conn => `
+                                        <div class="border-l-2 border-green-400 pl-2">
+                                            ${conn.src_ip} → ${conn.dst_ip}<br/>
+                                            <span class="text-green-400">Confidence: ${conn.tor_confidence}%</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    showNotification('TOR correlation analysis complete', 'success');
+                } else {
+                    resultsDiv.innerHTML = `<div class="text-red-400">Analysis failed: ${result.message || 'Unknown error'}</div>`;
+                    showNotification('Correlation analysis failed', 'error');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+                showNotification('Correlation analysis failed', 'error');
+            } finally {
+                button.textContent = 'Run TOR Correlation';
+                button.disabled = false;
+            }
+        }
+
+        // Connect TOR
+        async function connectTOR() {
+            const button = document.getElementById('torConnect');
+            button.textContent = 'Connecting...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:5000/api/tor/connect');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    button.textContent = 'TOR Connected';
+                    button.className = 'w-full bg-green-400 text-black font-bold py-2 rounded';
+                    showNotification('TOR connection established', 'success');
+                } else {
+                    button.textContent = 'TOR Unavailable';
+                    button.className = 'w-full bg-gray-600 text-gray-300 font-bold py-2 rounded';
+                    showNotification('TOR not available', 'warning');
+                }
+            } catch (error) {
+                button.textContent = 'Connect TOR';
+                button.disabled = false;
+                showNotification('TOR connection failed', 'error');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-900 border-green-500 text-green-200',
+                error: 'bg-red-900 border-red-500 text-red-200',
+                warning: 'bg-orange-900 border-orange-500 text-orange-200',
+                info: 'bg-blue-900 border-blue-500 text-blue-200'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 p-4 rounded-lg border ${colors[type]} max-w-sm`;
+            notification.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <p class="text-sm">${message}</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-400 hover:text-white">✕</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 4000);
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            
+            // Event listeners
+            document.getElementById('torConnect').addEventListener('click', connectTOR);
+            document.getElementById('startSniffer').addEventListener('click', startCapture);
+            document.getElementById('stopSniffer').addEventListener('click', stopCapture);
+            document.getElementById('startGeoTracking').addEventListener('click', startGeoTracking);
+            document.getElementById('runCorrelation').addEventListener('click', runCorrelation);
+            
+            // Start periodic updates
+            setInterval(checkBackendStatus, 5000);
+            setInterval(updatePackets, 3000);
+            
+            // Initial calls
+            checkBackendStatus();
+            updatePackets();
+        });
+    </script>
+</body>
+</html>

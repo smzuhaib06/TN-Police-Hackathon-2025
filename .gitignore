@@ -1,0 +1,50 @@
+# Stricter ignores for large/generated artifacts
+# Note: Git cannot ignore files by size. A pre-commit hook in .githooks/pre-commit
+# blocks staged files > 100MB. These patterns prevent committing heavy/generated data.
+
+######## Project data & artifacts ########
+# PCAP captures and uploads
+pcap_storage/
+*.pcap
+uploads/
+backend/uploads/
+
+# Generated reports/artifacts
+backend/reports/
+backend/reports/**/*.pdf
+backend/reports/**/*.html
+backend/reports/**/*.json
+
+# Large geolocation database (use external download or local path)
+GeoLite2-City.mmdb
+
+######## Logs & temp ########
+*.log
+*.tmp
+logs/
+tmp/
+
+######## Python ########
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+######## Node/JS (if used) ########
+node_modules/
+dist/
+build/
+.cache/
+
+######## Environment & secrets ########
+.env
+.env.*
+*.env
+
+######## IDE/OS junk ########
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp

@@ -28,7 +28,7 @@ def build_html_report(corr, pk, tor_stats):
         autoescape=select_autoescape(['html', 'xml'])
     )
 
-    template = env.get_template('forensic_report.html')
+    template = env.get_template('forensic_report_advanced.html')
 
     # Prepare context
     packets = pk.get('packets', []) if isinstance(pk, dict) else []
